@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@layer base {
+	:root {
+		font-family: 'Outfit', sans-serif;
+	}
+
+	.font-mono-board {
+		font-family: 'JetBrains Mono', monospace;
+	}
+}
+
+/* Styl wyświetlacza LED TRISTAR */
+.tristar-board {
+	background: radial-gradient(circle at 50% 0%, #171d2d 0%, #090c14 100%);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+}
+
+.amber-glow {
+	color: #f59e0b;
+	text-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.cyan-glow {
+	color: #06b6d4;
+	text-shadow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.emerald-glow {
+	color: #10b981;
+	text-shadow: 0 0 10px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes departing-blink {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.3; transform: scale(0.96); }
+}
+
+.animate-departing {
+	animation: departing-blink 0.9s infinite ease-in-out;
+}
+
