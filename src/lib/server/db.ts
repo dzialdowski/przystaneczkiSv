@@ -411,7 +411,7 @@ export async function getRouteStops(
 		const pool = await getDbPool();
 		const targetId = shapeId || tripId;
 
-		let result = await pool
+		const result = await pool
 			.request()
 			.input('targetId', sql.Int, targetId)
 			.query(`
