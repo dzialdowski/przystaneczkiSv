@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getRouteStops, getRouteNameFromDb } from '$lib/server/db';
+import { getRouteStops, getRouteNameFromDb, getBusDetails, type BusDetails } from '$lib/server/db';
 import { getStopDelays, getRoutesMap } from '$lib/server/tristar';
 import { getShapeIdForTrip, getShapeOffsets, getTripStartTime, resolveShapeId } from '$lib/server/gtfs';
 
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	let estParam = url.searchParams.get('est') || '';
 	let delayParam = url.searchParams.get('delay');
 	let headsignParam = url.searchParams.get('headsign') || '';
-	const vehicleCode = url.searchParams.get('vCode') || '';
+	let vehicleCode = url.searchParams.get('vCode') || '';
 
 	// 1. Nazwa linii
 	const routesMap = await getRoutesMap();
@@ -30,8 +30,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		lineName = dbName || String(routeId).replace(/^10+/, '') || String(routeId);
 	}
 
-	// 2. Jeśli brak headsignParam w URL, ale mamy fromStop, spróbuj odnaleźć w TRISTAR
-	if (!headsignParam || !theoParam) {
+	// 2. Jeśli brak headsignParam w URL lub brakuje vehicleCode, spróbuj odnaleźć w TRISTAR
+	if (!headsignParam || !theoParam || !vehicleCode) {
 		const checkStopId = fromStop > 0 ? fromStop : null;
 		if (checkStopId) {
 			try {
@@ -40,10 +40,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 					(d) => (trip > 0 && d.trip === trip) || (d.routeId === routeId && d.tripId === tripId)
 				);
 				if (match) {
-					if (!headsignParam) headsignParam = match.headsign;
-					if (!theoParam) theoParam = match.theoreticalTime;
-					if (!estParam) estParam = match.estimatedTime;
-					if (delayParam === null) delayParam = String(match.delayInSeconds);
+					if (!headsignParam && match.headsign) headsignParam = match.headsign;
+					if (!theoParam && match.theoreticalTime) theoParam = match.theoreticalTime;
+					if (!estParam && match.estimatedTime) estParam = match.estimatedTime;
+					if (delayParam === null && match.delayInSeconds !== undefined) delayParam = String(match.delayInSeconds);
+					if (!vehicleCode && match.vehicleCode) vehicleCode = String(match.vehicleCode);
 				}
 			} catch (err) {
 				console.warn('Błąd sprawdzania odjazdów z TRISTAR:', err);
@@ -62,13 +63,38 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		fromStop
 	});
 
-	// 5. Pobierz przesunięcia czasowe (offsets) dla danego wariantu
+	// 5. Jeśli nadal nie mamy vehicleCode, sprawdź początkowe przystanki trasy w TRISTAR
+	if (!vehicleCode && routeStops.length > 0) {
+		const candidateStops = [routeStops[0]?.stopId, routeStops[1]?.stopId].filter(
+			(id): id is number => typeof id === 'number' && id > 0 && id !== fromStop
+		);
+		for (const checkId of candidateStops) {
+			try {
+				const delaysRes = await getStopDelays(checkId);
+				const match = delaysRes.delays.find(
+					(d) => (trip > 0 && d.trip === trip) || (d.routeId === routeId && d.tripId === tripId)
+				);
+				if (match?.vehicleCode) {
+					vehicleCode = String(match.vehicleCode);
+					if (!headsignParam && match.headsign) headsignParam = match.headsign;
+					if (!theoParam && match.theoreticalTime) theoParam = match.theoreticalTime;
+					if (!estParam && match.estimatedTime) estParam = match.estimatedTime;
+					if (delayParam === null && match.delayInSeconds !== undefined) delayParam = String(match.delayInSeconds);
+					break;
+				}
+			} catch (err) {
+				console.warn(`Błąd sprawdzania TRISTAR na przystanku ${checkId}:`, err);
+			}
+		}
+	}
+
+	// 6. Pobierz przesunięcia czasowe (offsets) dla danego wariantu
 	let offsets = shapeId ? getShapeOffsets(shapeId) : null;
 	if (!offsets || offsets.length !== routeStops.length) {
 		offsets = routeStops.map((_, idx) => idx * 2);
 	}
 
-	// 4. Ustalenie czasu bazowego i opóźnienia
+	// 7. Ustalenie czasu bazowego i opóźnienia
 	let delaySec = delayParam !== null && delayParam !== undefined ? parseInt(delayParam, 10) : 0;
 	if (isNaN(delaySec)) delaySec = 0;
 
@@ -89,6 +115,9 @@ export const load: PageServerLoad = async ({ params, url }) => {
 					if (!headsignParam && match.headsign) {
 						headsignParam = match.headsign;
 					}
+					if (!vehicleCode && match.vehicleCode) {
+						vehicleCode = String(match.vehicleCode);
+					}
 				}
 			} catch (err) {
 				console.warn('Błąd sprawdzania odjazdów dla trasy:', err);
@@ -108,7 +137,14 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		}
 	}
 
-	// 5. Wyznaczenie czasu startu z przystanku 0 (startMinutes)
+	// 8. Pobierz szczegółowe dane techniczne pojazdu
+	let vehicleDetails: BusDetails | null = null;
+	const vCodeNum = parseInt(vehicleCode, 10);
+	if (vCodeNum > 0) {
+		vehicleDetails = await getBusDetails(vCodeNum);
+	}
+
+	// 9. Wyznaczenie czasu startu z przystanku 0 (startMinutes)
 	let fromIdx = 0;
 	if (fromStop > 0) {
 		const found = routeStops.findIndex((s) => s.stopId === fromStop);
@@ -121,7 +157,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const startMinutes = theoMinAtFrom - fromOffset;
 	const delayMin = Math.round(delaySec / 60);
 
-	// 6. Porównanie z aktualnym czasem dla określenia statusu (odjechał / następny / przyszły)
+	// 10. Porównanie z aktualnym czasem dla określenia statusu (odjechał / następny / przyszły)
 	const now = new Date();
 	const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -181,6 +217,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		lineName,
 		routeDescription: headsignParam || rInfo?.routeLongName || `Trasa linii ${lineName}`,
 		vehicleCode,
+		vehicleDetails,
 		delaySeconds: delaySec,
 		stops: stopsWithTimes
 	};

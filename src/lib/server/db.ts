@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import sql from 'mssql';
 
 /**
@@ -105,6 +106,35 @@ export interface UserSettings {
 	userId: string;
 	name: string;
 	legacyMode: boolean;
+}
+
+let localVehiclesCache: Map<number, BusDetails> | null = null;
+
+export function getFromLocalVehicles(vehicleCode: number): BusDetails | null {
+	if (!localVehiclesCache) {
+		try {
+			const dataDir = path.resolve('src/lib/data');
+			const filePath = path.join(dataDir, 'vehicles.json');
+			if (fs.existsSync(filePath)) {
+				const list = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+				localVehiclesCache = new Map();
+				for (const item of list) {
+					localVehiclesCache.set(Number(item.bus), {
+						bus: Number(item.bus),
+						marka: item.marka || null,
+						model: item.model || null,
+						photoURL: item.photoURL || null,
+						usb: Boolean(item.usb),
+						klima: Boolean(item.klima),
+						features: item.features || []
+					});
+				}
+			}
+		} catch (err) {
+			console.warn('Nie udało się załadować lokalnego cache pojazdów:', err);
+		}
+	}
+	return localVehiclesCache?.get(vehicleCode) || null;
 }
 
 /**
@@ -292,6 +322,8 @@ export async function toggleLegacyMode(userId: string, currentMode: boolean, nam
  * Pobiera dane techniczne pojazdu (marka, model, zdjęcie, udogodnienia)
  */
 export async function getBusDetails(vehicleCode: number): Promise<BusDetails | null> {
+	const local = getFromLocalVehicles(vehicleCode);
+
 	try {
 		const pool = await getDbPool();
 
@@ -306,22 +338,31 @@ export async function getBusDetails(vehicleCode: number): Promise<BusDetails | n
 				.query('SELECT featureName FROM [dbo].[busFeatures] WHERE vehicleID = @vehicleId')
 		]);
 
-		const features = featRes.recordset.map((f) => String(f.featureName).trim());
+		const dbFeatures = featRes.recordset.map((f) => String(f.featureName).trim());
+		const hasBrokenDbFeatures = dbFeatures.some((f) => f.includes('?'));
+		const features = (!hasBrokenDbFeatures && dbFeatures.length > 0)
+			? dbFeatures
+			: (local?.features && local.features.length > 0 ? local.features : dbFeatures);
+
 		const featLower = features.map((f) => f.toLowerCase());
-		const hasUsb = featLower.some((f) => f.includes('usb') || f.includes('ładowar'));
-		const hasKlima = featLower.some((f) => f.includes('klima') || f.includes('ac'));
+		const hasUsb = featLower.some((f) => f.includes('usb') || f.includes('ładowar')) || Boolean(local?.usb);
+		const hasKlima = featLower.some((f) => f.includes('klima') || f.includes('ac')) || Boolean(local?.klima);
 
 		if (busRes.recordset.length > 0) {
 			const b = busRes.recordset[0];
 			return {
 				bus: b.Bus,
-				marka: b.marka,
-				model: b.model,
-				photoURL: b.photoURL,
+				marka: b.marka || local?.marka || null,
+				model: b.model || local?.model || null,
+				photoURL: b.photoURL || local?.photoURL || null,
 				usb: hasUsb,
 				klima: hasKlima,
 				features
 			};
+		}
+
+		if (local) {
+			return local;
 		}
 
 		return {
@@ -334,7 +375,7 @@ export async function getBusDetails(vehicleCode: number): Promise<BusDetails | n
 			features
 		};
 	} catch {
-		return null;
+		return local;
 	}
 }
 

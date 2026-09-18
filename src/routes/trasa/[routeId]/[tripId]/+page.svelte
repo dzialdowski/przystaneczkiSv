@@ -1,6 +1,23 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { ArrowLeft, Bus, Clock, MapPin, CheckCircle2, AlertCircle } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		Bus,
+		Clock,
+		MapPin,
+		CheckCircle2,
+		AlertCircle,
+		Wind,
+		Zap,
+		ExternalLink,
+		ShieldCheck,
+		Volume2,
+		Tv,
+		Heart,
+		Ticket,
+		Accessibility,
+		Info
+	} from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 
 	let data = $derived(page.data);
@@ -19,6 +36,20 @@
 			return { text: `Przyspieszony -${m}m`, type: 'early' };
 		}
 	}
+
+	// Odfiltrowanie udogodnień, aby nie dublować klimatyzacji i USB pokazywanych jako dedykowane odznaki
+	let otherFeatures = $derived.by(() => {
+		const feats = (data.vehicleDetails?.features || []) as string[];
+		return feats.filter((f) => {
+			const lower = f.toLowerCase();
+			return (
+				!lower.includes('klima') &&
+				!lower.includes('ac') &&
+				!lower.includes('usb') &&
+				!lower.includes('ładowar')
+			);
+		});
+	});
 </script>
 
 <div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
@@ -42,7 +73,7 @@
 
 			{#if data.delaySeconds !== undefined}
 				{@const delayInfo = formatDelay(data.delaySeconds)}
-				<div class="flex items-center gap-2">
+				<div class="flex items-center gap-2 flex-wrap justify-end">
 					<span
 						class="text-xs font-bold px-3 py-1 rounded-full border {delayInfo.type === 'on-time'
 							? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
@@ -52,14 +83,24 @@
 					>
 						{delayInfo.text}
 					</span>
-					{#if data.vehicleCode}
+					{#if data.vehicleCode || data.vehicleDetails?.bus}
+						{@const vCode = data.vehicleCode || data.vehicleDetails?.bus}
 						<a
-							href="https://zkmgdynia.pl/sprawdz-pojazd/{data.vehicleCode}"
+							href="https://zkmgdynia.pl/sprawdz-pojazd/{vCode}"
 							target="_blank"
 							rel="noreferrer"
-							class="text-xs font-mono-board font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition border border-slate-700"
+							class="text-xs font-mono-board font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition border border-slate-700 inline-flex items-center gap-1.5"
 						>
-							Pojazd #{data.vehicleCode}
+							<span>Pojazd #{vCode}</span>
+							{#if data.vehicleDetails?.marka}
+								<span class="text-slate-400 font-normal">({data.vehicleDetails.marka} {data.vehicleDetails.model || ''})</span>
+							{/if}
+							{#if data.vehicleDetails?.klima}
+								<span title="Klimatyzacja">❄️</span>
+							{/if}
+							{#if data.vehicleDetails?.usb}
+								<span title="Ładowarki USB">⚡</span>
+							{/if}
 						</a>
 					{/if}
 				</div>
@@ -83,6 +124,151 @@
 				<p class="text-xs text-slate-400 mt-0.5">Lista przystanków, estymowane i rozkładowe czasy przyjazdu</p>
 			</div>
 		</div>
+
+		<!-- Karta Informacji o Pojeździe -->
+		{#if data.vehicleCode || data.vehicleDetails}
+			{@const vCode = data.vehicleCode || data.vehicleDetails?.bus}
+			<div class="bg-slate-900/70 rounded-3xl p-5 sm:p-6 border border-slate-800/90 shadow-xl backdrop-blur-sm space-y-4">
+				<!-- Pasek nagłówka sekcji pojazdu -->
+				<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+					<div class="flex items-center gap-2.5">
+						<div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+							<Bus class="w-5 h-5" />
+						</div>
+						<div>
+							<div class="flex items-center gap-2">
+								<h2 class="text-sm sm:text-base font-bold text-white">Pojazd obsługujący ten kurs</h2>
+								<span class="text-xs font-mono-board font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 shadow-sm">
+									#{vCode}
+								</span>
+							</div>
+							<p class="text-[11px] text-slate-400">Dane taborowe ZKM Gdynia & telemetryczne TRISTAR</p>
+						</div>
+					</div>
+
+					<a
+						href="https://zkmgdynia.pl/sprawdz-pojazd/{vCode}"
+						target="_blank"
+						rel="noreferrer"
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+					>
+						<span>Karta pojazdu w ZKM</span>
+						<ExternalLink class="w-3.5 h-3.5" />
+					</a>
+				</div>
+
+				<!-- Zawartość: Zdjęcie + Parametry i Udogodnienia -->
+				<div class="flex flex-col sm:flex-row gap-5 items-start">
+					{#if data.vehicleDetails?.photoURL}
+						<div class="w-full sm:w-60 md:w-72 h-44 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative group shadow-inner">
+							<img
+								src={data.vehicleDetails.photoURL}
+								alt="Pojazd #{vCode}"
+								class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+								loading="lazy"
+							/>
+							<div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono-board font-bold text-amber-400 shadow">
+								#{vCode}
+							</div>
+						</div>
+					{:else}
+						<div class="w-full sm:w-44 h-36 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center p-4 text-center shrink-0">
+							<div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-2">
+								<Bus class="w-6 h-6" />
+							</div>
+							<span class="text-xs font-mono-board font-bold text-slate-200">
+								#{vCode}
+							</span>
+							<span class="text-[10px] text-slate-500 mt-0.5">Brak zdjęcia w bazie</span>
+						</div>
+					{/if}
+
+					<!-- Dane techniczne i wyposażenie -->
+					<div class="min-w-0 flex-1 space-y-3.5">
+						<div>
+							{#if data.vehicleDetails?.marka}
+								<h3 class="text-lg sm:text-xl font-black text-white tracking-tight">
+									{data.vehicleDetails.marka} {data.vehicleDetails.model || ''}
+								</h3>
+							{:else}
+								<h3 class="text-lg sm:text-xl font-black text-white tracking-tight">
+									Pojazd #{vCode}
+								</h3>
+							{/if}
+							<div class="flex items-center gap-2 text-xs font-mono-board text-slate-400 mt-0.5">
+								<span>Numer taborowy: <strong class="text-amber-400">#{vCode}</strong></span>
+								<span class="text-slate-600">•</span>
+								<span>Ewidencja ZKM Gdynia</span>
+							</div>
+						</div>
+
+						<!-- Główne udogodnienia (Klima, USB) i cechy taboru -->
+						<div class="space-y-2">
+							<div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+								Wyposażenie i udogodnienia:
+							</div>
+							<div class="flex flex-wrap gap-2">
+								{#if data.vehicleDetails?.klima}
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 text-xs font-semibold shadow-sm shadow-cyan-500/10">
+										<Wind class="w-3.5 h-3.5 text-cyan-400" />
+										<span>Klimatyzacja</span>
+									</span>
+								{/if}
+								{#if data.vehicleDetails?.usb}
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 text-xs font-semibold shadow-sm shadow-emerald-500/10">
+										<Zap class="w-3.5 h-3.5 text-emerald-400" />
+										<span>Ładowarki USB</span>
+									</span>
+								{/if}
+
+								{#each otherFeatures as feat (feat)}
+									{@const lower = feat.toLowerCase()}
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 text-slate-300 border border-slate-700/80 text-xs font-medium">
+										{#if lower.includes('rampa') || lower.includes('wózk')}
+											<Accessibility class="w-3.5 h-3.5 text-indigo-400" />
+										{:else if lower.includes('przyklęk') || lower.includes('niska')}
+											<Accessibility class="w-3.5 h-3.5 text-violet-400" />
+										{:else if lower.includes('monitoring')}
+											<ShieldCheck class="w-3.5 h-3.5 text-slate-400" />
+										{:else if lower.includes('zapowia') || lower.includes('głosow')}
+											<Volume2 class="w-3.5 h-3.5 text-amber-400" />
+										{:else if lower.includes('monitor') || lower.includes('ekran')}
+											<Tv class="w-3.5 h-3.5 text-sky-400" />
+										{:else if lower.includes('biletomat')}
+											<Ticket class="w-3.5 h-3.5 text-emerald-400" />
+										{:else if lower.includes('aed') || lower.includes('defibryl')}
+											<Heart class="w-3.5 h-3.5 text-rose-400" />
+										{:else}
+											<CheckCircle2 class="w-3.5 h-3.5 text-slate-400" />
+										{/if}
+										<span>{feat}</span>
+									</span>
+								{/each}
+
+								{#if !data.vehicleDetails?.klima && !data.vehicleDetails?.usb && otherFeatures.length === 0}
+									<span class="text-xs text-slate-500 italic">
+										Brak szczegółowego wykazu wyposażenia w bazie ZKM dla tego pojazdu.
+									</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<!-- Brak przypisanego pojazdu -->
+			<div class="bg-slate-900/40 rounded-3xl p-5 border border-slate-800/80 shadow-lg flex items-center gap-4 text-slate-400">
+				<div class="w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0 text-slate-400">
+					<Info class="w-5 h-5 text-slate-400" />
+				</div>
+				<div class="text-xs">
+					<div class="font-bold text-slate-300">Pojazd według rozkładu (brak danych TRISTAR)</div>
+					<div class="text-slate-400 mt-0.5">
+						Ten kurs realizowany jest zgodnie z rozkładem jazdy. Numer boczny pojazdu oraz udogodnienia pojawią się na żywo, gdy pojazd zaloguje się do systemu TRISTAR.
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Sekwencja przystanków (oś czasu / timeline) -->
 		<div class="bg-slate-900/40 rounded-3xl p-6 border border-slate-800/80 shadow-lg">

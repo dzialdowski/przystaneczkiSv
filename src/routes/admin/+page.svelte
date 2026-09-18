@@ -197,7 +197,7 @@
 									<td class="p-3 text-slate-300">{v.model || '-'}</td>
 									<td class="p-3 text-right">
 										<a
-											href="https://zkmgdynia.pl/sprawdz-pojazd/{v.Bus}"
+											href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={v.Bus}&typ=&brand_id=&model_id=&carrier_id="
 											target="_blank"
 											rel="noreferrer"
 											class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"

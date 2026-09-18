@@ -30,7 +30,7 @@
 		if (typeof row.delayInSeconds === 'number') params.set('delay', String(row.delayInSeconds));
 		if (row.headsign) params.set('headsign', row.headsign);
 		if (row.vehicleCode) params.set('vCode', String(row.vehicleCode));
-		return `/trasa/${row.routeId}/${row.tripId}?${params.toString()}`;
+		return `/trasa/${row.routeId}/${row.tripId}?${params.toString()}` & '';
 	}
 
 	let currentTime = $state(Date.now());
@@ -170,7 +170,7 @@
 							<td class="p-2 text-center">
 								{#if row.vehicleCode}
 									<a
-										href="https://zkmgdynia.pl/sprawdz-pojazd/{row.vehicleCode}"
+										href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={row.vehicleCode}&typ=&brand_id=&model_id=&carrier_id="
 										target="_blank"
 										class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-200 hover:bg-amber-500 hover:text-black transition"
 									>
@@ -230,7 +230,7 @@
 			</div>
 
 			<!-- Lista odjazdów -->
-			<div class="divide-y divide-slate-850">
+			<div class="divide-y divide-slate-855">
 				{#each delays as row, idx (`${row.line}-${row.tripId || ''}-${row.theoreticalTime}-${idx}`)}
 					{@const countdown = calculateLiveCountdown(row.theoreticalTime, row.delayInSeconds)}
 					<div class="p-4 sm:p-5 hover:bg-slate-900/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
@@ -273,7 +273,7 @@
 									{#if row.vehicleCode}
 										<span class="text-slate-500">•</span>
 										<a
-											href="https://zkmgdynia.pl/sprawdz-pojazd/{row.vehicleCode}"
+											href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={row.vehicleCode}&typ=&brand_id=&model_id=&carrier_id="
 											target="_blank"
 											rel="noreferrer"
 											class="inline-flex items-center gap-1 text-slate-400 hover:text-white transition"
