@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # Etap 1: Budowanie aplikacji
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN npm prune --omit=dev
 
 # ==============================================================================
 # Etap 2: Obraz produkcyjny (lekki i bezpieczny)
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 

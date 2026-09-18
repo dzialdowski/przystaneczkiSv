@@ -1,6 +1,6 @@
 # Instrukcja wdrożenia w Azure App Service
 
-Niniejszy przewodnik opisuje krok po kroku przygotowanie i wdrożenie aplikacji **Przystaneczki** w usłudze **Azure App Service** (zalecany system: **Linux** ze środowiskiem **Node.js 20 LTS**).
+Niniejszy przewodnik opisuje krok po kroku przygotowanie i wdrożenie aplikacji **Przystaneczki** w usłudze **Azure App Service** (zalecany system: **Linux** ze środowiskiem **Node.js 22 LTS**).
 
 ---
 
@@ -20,7 +20,7 @@ Projekt został przygotowany do obsługi trzech najpopularniejszych metod publik
 2. Przejdź do **App Services** i kliknij **Create** -> **Web App**.
 3. Wypełnij podstawowe parametry:
    - **Publish**: `Code` (lub `Docker Container` w przypadku metody 3)
-   - **Runtime stack**: `Node 20 LTS`
+   - **Runtime stack**: `Node 22 LTS`
    - **Operating System**: `Linux` (zalecany)
    - **Pricing Plan**: Basic (B1), Standard (S1) lub Premium (P1v3). *(Darmowy plan F1 nie jest zalecany ze względu na limity pamięci przy budowaniu)*.
 4. Kliknij **Review + create** i utwórz aplikację.
@@ -87,7 +87,7 @@ Workflow GitHub Actions został automatycznie powiązany z Azure App Service w p
 [`.github/workflows/master_przystaneczki.yml`](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/.github/workflows/master_przystaneczki.yml)
 
 Każdy commit i push do gałęzi `master`:
-1. Uruchamia Node.js 20 LTS.
+1. Uruchamia Node.js 22 LTS.
 2. Wykonuje `npm install`, `npm run build` oraz `npm test`.
 3. Przesyła zbudowaną paczkę do aplikacji `przystaneczki` w Azure App Service.
 
