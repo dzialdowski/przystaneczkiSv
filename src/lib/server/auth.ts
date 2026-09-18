@@ -1,5 +1,8 @@
+import { loadEnvFileIfNeeded } from './db';
 import crypto from 'crypto';
 import type { RequestEvent } from '@sveltejs/kit';
+
+loadEnvFileIfNeeded();
 
 export interface TelegramUser {
 	id: number | string;
@@ -70,7 +73,8 @@ export async function getTelegramPublicKey(kid?: string): Promise<crypto.KeyObje
  * Weryfikuje podpis z widgetu logowania Telegram (HMAC-SHA256)
  */
 export function verifyTelegramAuth(data: Record<string, any>): boolean {
-	if (!data.hash || !BOT_TOKEN) return false;
+	const token = BOT_TOKEN || process.env.BOT_TOKEN || '';
+	if (!data.hash || !token) return false;
 
 	const checkHash = String(data.hash).toLowerCase();
 	const checkArr: string[] = [];
@@ -84,7 +88,7 @@ export function verifyTelegramAuth(data: Record<string, any>): boolean {
 	checkArr.sort();
 	const checkString = checkArr.join('\n');
 
-	const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest();
+	const secretKey = crypto.createHash('sha256').update(token).digest();
 	const hmac = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex').toLowerCase();
 
 	if (hmac !== checkHash) {
@@ -120,83 +124,55 @@ export async function parseAndVerifyTelegramIdToken(tokenCandidate: any): Promis
 			return { user: null, error: `Oczekiwano ciągu znaków JWT, otrzymano: ${typeof idToken}` };
 		}
 
-		idToken = idToken.trim();
-		if (idToken.startsWith('{') && idToken.endsWith('}')) {
-			try {
-				const parsed = JSON.parse(idToken);
-				return parseAndVerifyTelegramIdToken(parsed);
-			} catch {}
-		}
-
 		const parts = idToken.split('.');
 		if (parts.length !== 3) {
-			return { user: null, error: `Nieprawidłowy format JWT (liczba części: ${parts.length})` };
+			return { user: null, error: 'Nieprawidłowy format JWT (wymagane 3 części)' };
 		}
 
-		let header: any;
-		let payload: any;
-		try {
-			const headerStr = Buffer.from(parts[0], 'base64url').toString('utf8');
-			header = JSON.parse(headerStr);
-			const payloadStr = Buffer.from(parts[1], 'base64url').toString('utf8');
-			payload = JSON.parse(payloadStr);
-		} catch (e: any) {
-			return { user: null, error: `Błąd dekodowania zawartości tokena JWT: ${e.message}` };
+		const [headerB64, payloadB64, signatureB64] = parts;
+		const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8'));
+		const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+
+		if (payload.iss !== 'https://oauth.telegram.org') {
+			return { user: null, error: `Nieprawidłowy issuer (iss): ${payload.iss}` };
+		}
+
+		const botId = BOT_ID || process.env.PUBLIC_BOT_ID || process.env.BOT_ID;
+		if (botId && payload.aud && String(payload.aud) !== String(botId)) {
+			console.warn(`Ostrzeżenie aud: token aud=${payload.aud}, nasz botId=${botId}`);
 		}
 
 		const now = Math.floor(Date.now() / 1000);
-
-		// Tolerancja 10 minut na przesunięcie czasu lokalnego vs serwera
-		if (payload.exp && payload.exp + 600 < now) {
-			console.warn('Telegram ID token expired. exp:', payload.exp, 'now:', now);
-			return { user: null, error: `Token Telegram wygasł (exp: ${payload.exp}, current: ${now})` };
+		if (payload.exp && payload.exp < now - 60) {
+			return { user: null, error: 'Token JWT wygasł' };
 		}
 
-		const iss = (payload.iss || '').replace(/\/$/, '');
-		if (iss && !iss.includes('telegram.org') && !iss.includes('t.me')) {
-			console.warn('Invalid Telegram token issuer:', payload.iss);
-			return { user: null, error: `Nieznany wystawca tokena: ${payload.iss}` };
+		const publicKey = await getTelegramPublicKey(header.kid);
+		if (!publicKey) {
+			return { user: null, error: 'Nie udało się pobrać klucza publicznego Telegrama' };
 		}
 
-		if (BOT_ID && payload.aud && String(payload.aud) !== String(BOT_ID)) {
-			console.warn('Invalid aud in token:', payload.aud, 'expected:', BOT_ID);
-		}
+		const verifier = crypto.createVerify('RSA-SHA256');
+		verifier.update(`${headerB64}.${payloadB64}`);
+		const isSigValid = verifier.verify(publicKey, signatureB64, 'base64url');
 
-		// Próba weryfikacji kryptograficznej RS256 z kluczem z JWKS
-		if (header.alg === 'RS256') {
-			try {
-				const pubKey = await getTelegramPublicKey(header.kid);
-				if (pubKey) {
-					const verifier = crypto.createVerify('RSA-SHA256');
-					verifier.update(`${parts[0]}.${parts[1]}`);
-					const valid = verifier.verify(pubKey, Buffer.from(parts[2], 'base64url'));
-					if (!valid) {
-						console.warn('Weryfikacja podpisu RS256 nie powiodła się');
-					}
-				}
-			} catch (sigErr) {
-				console.warn('Błąd weryfikacji podpisu JWKS RS256:', sigErr);
-			}
-		}
-
-		const userId = payload.id || payload.sub || payload.user_id;
-		if (!userId) {
-			return { user: null, error: 'Brak identyfikatora użytkownika (sub/id) w tokenie' };
+		if (!isSigValid) {
+			return { user: null, error: 'Nieprawidłowy podpis kryptograficzny JWT Telegrama' };
 		}
 
 		const user: TelegramUser = {
-			id: userId,
-			first_name: payload.name || payload.given_name || payload.first_name || payload.preferred_username || 'Użytkownik Telegram',
-			last_name: payload.family_name || payload.last_name || '',
-			username: payload.preferred_username || payload.username || '',
-			photo_url: payload.picture || payload.photo_url || '',
-			auth_date: payload.iat || now
+			id: payload.sub,
+			first_name: payload.name || payload.first_name || 'Użytkownik',
+			last_name: payload.family_name || payload.last_name || undefined,
+			username: payload.preferred_username || payload.username || undefined,
+			photo_url: payload.picture || undefined,
+			auth_date: payload.auth_time || payload.iat || now
 		};
 
 		return { user };
-	} catch (e: any) {
-		console.error('Błąd parsowania id_token Telegrama:', e);
-		return { user: null, error: `Błąd przetwarzania tokena: ${e.message}` };
+	} catch (err: any) {
+		console.error('Błąd parsowania/weryfikacji tokena JWT Telegrama:', err);
+		return { user: null, error: err.message || 'Błąd wewnętrzny weryfikacji tokena' };
 	}
 }
 

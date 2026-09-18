@@ -1,10 +1,54 @@
+import fs from 'fs';
 import sql from 'mssql';
 
+/**
+ * Zapewnia, że zmienne z pliku .env są załadowane do process.env w środowisku dev i skryptach Node.
+ */
+export function loadEnvFileIfNeeded() {
+	if (typeof process.loadEnvFile === 'function') {
+		try {
+			process.loadEnvFile('.env');
+		} catch {
+			// Ignoruj jeśli już wczytany lub plik nie istnieje
+		}
+	}
+
+	if (fs.existsSync('.env')) {
+		try {
+			const content = fs.readFileSync('.env', 'utf-8');
+			for (const line of content.split(/\r?\n/)) {
+				const trimmed = line.trim();
+				if (!trimmed || trimmed.startsWith('#')) continue;
+				const eq = trimmed.indexOf('=');
+				if (eq > 0) {
+					const key = trimmed.slice(0, eq).trim();
+					let val = trimmed.slice(eq + 1).trim();
+					if (
+						(val.startsWith('"') && val.endsWith('"')) ||
+						(val.startsWith("'") && val.endsWith("'"))
+					) {
+						val = val.slice(1, -1);
+					}
+					if (process.env[key] === undefined) {
+						process.env[key] = val;
+					}
+				}
+			}
+		} catch {
+			// Ignoruj błędy odczytu
+		}
+	}
+}
+
+// Inicjalizacja natychmiast przy imporcie modułu
+loadEnvFileIfNeeded();
+
 function getSqlConfig(): sql.config {
+	loadEnvFileIfNeeded();
 	return {
 		user: process.env.MSSQL_USER || '',
 		password: process.env.MSSQL_PASSWORD || '',
-		server: process.env.MSSQL_SERVER || 'localhost',
+		server: process.env.MSSQL_SERVER || '',
 		database: process.env.MSSQL_DATABASE || '',
 		port: process.env.MSSQL_PORT ? parseInt(process.env.MSSQL_PORT, 10) : 1433,
 		options: {
