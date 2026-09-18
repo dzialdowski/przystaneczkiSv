@@ -106,10 +106,22 @@ Aplikacja współpracuje z następującymi tabelami:
 
 ---
 
+## ☁️ Wdrożenie w Azure App Service
+
+Szczegółowy przewodnik wdrożenia aplikacji w chmurze Azure znajduje się w dokumencie **[AZURE_DEPLOY.md](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/AZURE_DEPLOY.md)**.
+Zawiera on:
+- Konfigurację zmiennych środowiskowych i Azure SQL
+- Ustawienia reverse proxy i nagłówków SvelteKit
+- Gotowy workflow GitHub Actions ([`.github/workflows/azure-appservice.yml`](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/.github/workflows/azure-appservice.yml))
+- Opcjonalne wdrożenie kontenerowe za pomocą [Dockerfile](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/Dockerfile)
+
+---
+
 ## 📜 Dostępne skrypty
 
 - `npm run dev` – Uruchomienie deweloperskiego serwera Vite z HMR.
 - `npm run build` – Zbudowanie produkcyjnej paczki aplikacji (`svelte-kit build`).
+- `npm start` – Uruchomienie zbudowanego serwera Node.js (`node build/index.js`).
 - `npm run check` – Statyczna weryfikacja typów TypeScript i komponentów Svelte (`svelte-check`).
 - `npm run sync:gtfs` – Samodzielny skrypt pobierający `gtfs.zip` i synchronizujący bazę.
 - `npm run scrape:vehicles` – Samodzielny skrypt aktualizujący dane taboru z wyszukiwarki ZKM.
