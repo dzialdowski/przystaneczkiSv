@@ -30,7 +30,7 @@
 		if (typeof row.delayInSeconds === 'number') params.set('delay', String(row.delayInSeconds));
 		if (row.headsign) params.set('headsign', row.headsign);
 		if (row.vehicleCode) params.set('vCode', String(row.vehicleCode));
-		return `/trasa/${row.routeId}/${row.tripId}?${params.toString()}` & '';
+		return `/trasa/${row.routeId}/${row.tripId}?${params.toString()}`;
 	}
 
 	let currentTime = $state(Date.now());
@@ -230,7 +230,7 @@
 			</div>
 
 			<!-- Lista odjazdów -->
-			<div class="divide-y divide-slate-855">
+			<div class="divide-y divide-slate-850">
 				{#each delays as row, idx (`${row.line}-${row.tripId || ''}-${row.theoreticalTime}-${idx}`)}
 					{@const countdown = calculateLiveCountdown(row.theoreticalTime, row.delayInSeconds)}
 					<div class="p-4 sm:p-5 hover:bg-slate-900/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
