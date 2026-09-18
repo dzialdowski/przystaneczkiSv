@@ -8,7 +8,7 @@ Niniejszy przewodnik opisuje krok po kroku przygotowanie i wdrożenie aplikacji 
 
 Projekt został przygotowany do obsługi trzech najpopularniejszych metod publikacji:
 
-1. **GitHub Actions (Zalecana)** – automatyczne budowanie i publikacja po każdym `git push` do gałęzi `main`.
+1. **GitHub Actions (Zalecana i już skonfigurowana)** – automatyczne budowanie i publikacja po każdym `git push` do gałęzi `master` (plik workflow: [`.github/workflows/master_przystaneczki.yml`](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/.github/workflows/master_przystaneczki.yml)).
 2. **Azure CLI / Zip Deploy / Git** – publikacja bezpośrednia kodu źródłowego (mechanizm Oryx sam instaluje zależności i uruchamia `npm run build`).
 3. **Kontener Docker (Web App for Containers)** – użycie załączonego pliku [Dockerfile](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/Dockerfile).
 
@@ -83,13 +83,13 @@ W Azure Portal:
 
 ## 5. Wdrożenie z GitHub Actions
 
-1. W Azure Portal przejdź do swojej aplikacji Web App i kliknij **Get publish profile** (pobierze plik `.PublishSettings`).
-2. W repozytorium na GitHubie wejdź w **Settings** -> **Secrets and variables** -> **Actions**.
-3. Utwórz nowy secret:
-   - Nazwa: `AZURE_WEBAPP_PUBLISH_PROFILE`
-   - Wartość: Cała zawartość pobranego pliku `.PublishSettings`
-4. W pliku [.github/workflows/azure-appservice.yml](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/.github/workflows/azure-appservice.yml) zmień wartość zmiennej `AZURE_WEBAPP_NAME` na nazwę swojej aplikacji w Azure.
-5. Zrób commit i push – workflow automatycznie zbuduje projekt i wdroży go na Azure.
+Workflow GitHub Actions został automatycznie powiązany z Azure App Service w pliku:
+[`.github/workflows/master_przystaneczki.yml`](file:///C:/Users/rafal/source/repos/komunikacja/przystaneczkiSv/.github/workflows/master_przystaneczki.yml)
+
+Każdy commit i push do gałęzi `master`:
+1. Uruchamia Node.js 20 LTS.
+2. Wykonuje `npm install`, `npm run build` oraz `npm test`.
+3. Przesyła zbudowaną paczkę do aplikacji `przystaneczki` w Azure App Service.
 
 ---
 

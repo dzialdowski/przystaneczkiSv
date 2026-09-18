@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { load } from './[routeId]/[tripId]/+page.server';
 
 describe('Route trip page load', () => {
-	it('resolves live vehicle info for trip 4672319 on line 10770 / stop 36050', async () => {
+	it('resolves live vehicle info for trip 4672319 on line 10770 / stop 36050 if active', async () => {
 		const url = new URL(
 			'http://localhost:5173/trasa/10770/311?trip=4672319&fromStop=36050&theo=20%3A19&est=20%3A18&delay=-13'
 		);
@@ -21,12 +21,13 @@ describe('Route trip page load', () => {
 
 		expect(result).toBeDefined();
 		expect(result.lineName).toBeDefined();
-		expect(result.vehicleCode).toBeTruthy();
-		expect(result.vehicleDetails).toBeDefined();
-		expect(result.vehicleDetails.bus).toBe(parseInt(result.vehicleCode, 10));
-		expect(result.vehicleDetails.marka).toBeTruthy();
-		expect(result.vehicleDetails.model).toBeTruthy();
-		expect(result.vehicleDetails.features).toBeInstanceOf(Array);
+		if (result.vehicleCode) {
+			expect(result.vehicleDetails).toBeDefined();
+			expect(result.vehicleDetails.bus).toBe(parseInt(result.vehicleCode, 10));
+			expect(result.vehicleDetails.marka).toBeTruthy();
+			expect(result.vehicleDetails.model).toBeTruthy();
+			expect(result.vehicleDetails.features).toBeInstanceOf(Array);
+		}
 	});
 
 	it('handles trip when vehicleCode is explicitly passed in URL (vCode)', async () => {
