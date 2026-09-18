@@ -86,7 +86,7 @@
 					{#if data.vehicleCode || data.vehicleDetails?.bus}
 						{@const vCode = data.vehicleCode || data.vehicleDetails?.bus}
 						<a
-							href="https://zkmgdynia.pl/sprawdz-pojazd/{vCode}"
+							href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={vCode}&typ=&brand_id=&model_id=&carrier_id="
 							target="_blank"
 							rel="noreferrer"
 							class="text-xs font-mono-board font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition border border-slate-700 inline-flex items-center gap-1.5"
@@ -147,7 +147,7 @@
 					</div>
 
 					<a
-						href="https://zkmgdynia.pl/sprawdz-pojazd/{vCode}"
+						href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={vCode}&typ=&brand_id=&model_id=&carrier_id="
 						target="_blank"
 						rel="noreferrer"
 						class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 text-xs font-semibold border border-slate-700 transition"
