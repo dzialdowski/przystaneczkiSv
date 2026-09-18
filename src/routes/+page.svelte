@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
+	import type { Snapshot } from './$types';
 	import { Star, MapPin, RefreshCw, Bus, Share2, Sparkles } from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import DepartureBoard from '$lib/components/DepartureBoard.svelte';
@@ -8,6 +9,12 @@
 	import MessageTicker from '$lib/components/MessageTicker.svelte';
 	import type { DelaysResponse } from '$lib/server/tristar';
 	import type { FavoriteStop } from '$lib/server/db';
+
+	interface PageSnapshot {
+		selectedStopId: string;
+		currentStopName: string;
+		delaysData: DelaysResponse;
+	}
 
 	// Dane z layoutu
 	let { data } = $props();
@@ -32,6 +39,25 @@
 	let loadingDelays = $state(false);
 	let autoRefreshTimer: any;
 	let toastMessage = $state<string | null>(null);
+	let restoredFromSnapshot = false;
+
+	// SvelteKit snapshot do zapamiętywania stanu przed nawigacją i odtwarzania go po powrocie
+	export const snapshot: Snapshot<PageSnapshot> = {
+		capture: () => ({
+			selectedStopId,
+			currentStopName,
+			delaysData: delaysData && delaysData.delays ? $state.snapshot(delaysData) : { stopId: selectedStopId, lastUpdate: '', delays: [] }
+		}),
+		restore: (value) => {
+			if (!value) return;
+			if (value.selectedStopId) selectedStopId = String(value.selectedStopId);
+			if (value.currentStopName) currentStopName = value.currentStopName;
+			if (value.delaysData && Array.isArray(value.delaysData.delays) && value.delaysData.delays.length > 0) {
+				delaysData = value.delaysData;
+				restoredFromSnapshot = true;
+			}
+		}
+	};
 
 	// Czy ten przystanek jest w ulubionych usera
 	let isFavorite = $derived(favorites.some((f) => String(f.stop_id).trim() === String(selectedStopId).trim()));
@@ -39,9 +65,13 @@
 	async function loadDelays(stopId: string) {
 		loadingDelays = true;
 		try {
-			const res = await fetch(`/api/delays?stopId=${stopId}`);
+			const res = await fetch(`/api/delays?stopId=${encodeURIComponent(stopId)}`);
 			if (res.ok) {
-				delaysData = await res.json();
+				const responseData = await res.json();
+				// Zabezpieczenie przed race condition: przypisz dane tylko jeśli wciąż wybrany jest ten sam przystanek
+				if (String(stopId).trim() === String(selectedStopId).trim()) {
+					delaysData = responseData;
+				}
 			}
 		} catch (err) {
 			console.error('Błąd pobierania odjazdów:', err);
@@ -51,9 +81,9 @@
 	}
 
 	function handleSelectStop(id: string, name: string) {
-		selectedStopId = id;
+		selectedStopId = String(id);
 		currentStopName = name.replace(/^[⭐📍]\s*/, '');
-		loadDelays(id);
+		loadDelays(selectedStopId);
 	}
 
 	async function toggleFavorite() {
@@ -105,15 +135,16 @@
 	}
 
 	onMount(() => {
-		// Jeśli user ma ulubione, ustaw pierwszy jako domyślny
-		if (favorites && favorites.length > 0) {
-			selectedStopId = favorites[0].stop_id;
+		// Jeśli user ma ulubione i stan NIE został odtworzony ze snapshotu, ustaw pierwszy jako domyślny
+		if (!restoredFromSnapshot && favorites && favorites.length > 0) {
+			selectedStopId = String(favorites[0].stop_id);
 			currentStopName = favorites[0].stop_name;
 		}
 
+		// Pobierz świeże dane z API (jeśli ze snapshotu, lista już jest wyrenderowana, a w tle pobierze najświeższe dane)
 		loadDelays(selectedStopId);
 
-		// Odświeżaj co 25 sekund
+		// Odświeżaj co 25 sekund w tle
 		autoRefreshTimer = setInterval(() => {
 			loadDelays(selectedStopId);
 		}, 25000);
@@ -129,6 +160,7 @@
 		{user}
 		{legacyMode}
 		{isAdmin}
+		isRefreshing={loadingDelays}
 		onRefresh={() => loadDelays(selectedStopId)}
 		onToggleLegacy={handleToggleLegacy}
 	/>

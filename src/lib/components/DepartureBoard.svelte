@@ -1,18 +1,25 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { Clock, AlertTriangle, CheckCircle2, Zap, Wind, ExternalLink, Compass } from 'lucide-svelte';
+	import { Clock, AlertTriangle, CheckCircle2, Zap, Wind, ExternalLink, Compass, RefreshCw } from 'lucide-svelte';
 	import type { EnrichedDelayItem } from '$lib/server/tristar';
 
 	interface Props {
-		delays: EnrichedDelayItem[];
-		lastUpdate: string;
+		delays?: EnrichedDelayItem[];
+		lastUpdate?: string;
 		loading?: boolean;
 		legacyMode?: boolean;
 		stopName?: string;
 		stopId?: string | number;
 	}
 
-	let { delays, lastUpdate, loading = false, legacyMode = false, stopName = '', stopId = '' }: Props = $props();
+	let {
+		delays = [],
+		lastUpdate = '',
+		loading = false,
+		legacyMode = false,
+		stopName = '',
+		stopId = ''
+	}: Props = $props();
 
 	function getRouteUrl(row: EnrichedDelayItem) {
 		const params = new URLSearchParams();
@@ -83,12 +90,12 @@
 </script>
 
 <div class="w-full">
-	{#if loading}
+	{#if loading && (!delays || delays.length === 0)}
 		<div class="flex flex-col items-center justify-center p-12 text-slate-400 bg-slate-900/40 rounded-3xl border border-slate-800">
 			<div class="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-3"></div>
-			<p class="text-sm font-medium">Odświeżanie tablicy TRISTAR...</p>
+			<p class="text-sm font-medium">Pobieranie odjazdów TRISTAR...</p>
 		</div>
-	{:else if delays.length === 0}
+	{:else if !delays || delays.length === 0}
 		<div class="p-8 text-center bg-slate-900/40 rounded-3xl border border-slate-800/80">
 			<div class="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-400 mb-3">
 				<Clock class="w-6 h-6" />
@@ -103,9 +110,15 @@
 		</div>
 	{:else if legacyMode}
 		<!-- TRYB LEGACY (Odwzorowanie wyglądu starego index.php / ajaxReturn.php z retro tabelą) -->
-		<div class="overflow-x-auto rounded-xl border border-neutral-700 bg-black p-4 text-xs font-mono">
-			<div class="text-center font-bold text-amber-400 text-sm mb-2 uppercase">
-				[ TRYB RETRO PHP ] {stopName}
+		<div class="overflow-x-auto rounded-xl border border-neutral-700 bg-black p-4 text-xs font-mono transition-opacity duration-200 {loading ? 'opacity-85' : 'opacity-100'}">
+			<div class="text-center font-bold text-amber-400 text-sm mb-2 uppercase flex items-center justify-center gap-2">
+				<span>[ TRYB RETRO PHP ] {stopName}</span>
+				{#if loading}
+					<span class="inline-flex items-center gap-1 text-[11px] text-amber-300 font-normal lowercase">
+						<RefreshCw class="w-3 h-3 animate-spin" />
+						<span>odświeżanie...</span>
+					</span>
+				{/if}
 			</div>
 			<table class="w-full border-collapse text-neutral-200">
 				<thead>
@@ -120,7 +133,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each delays as row, i}
+					{#each delays as row, idx (`${row.line}-${row.tripId || ''}-${row.theoreticalTime}-${idx}`)}
 						{@const countdown = calculateLiveCountdown(row.theoreticalTime, row.delayInSeconds)}
 						<tr class="border-b border-neutral-800 hover:bg-neutral-900/50">
 							<td class="p-2 font-bold text-amber-400">
@@ -173,23 +186,43 @@
 					{/each}
 				</tbody>
 			</table>
-			<div class="mt-3 text-right text-[10px] text-neutral-400">
-				Aktualizacja TRISTAR: {lastUpdate}
+			<div class="mt-3 flex items-center justify-between text-[10px] text-neutral-400">
+				<div>
+					{#if loading}
+						<span class="text-amber-400 font-semibold flex items-center gap-1">
+							<RefreshCw class="w-3 h-3 animate-spin" /> Pobieranie aktualizacji...
+						</span>
+					{/if}
+				</div>
+				<div>
+					Aktualizacja TRISTAR: {lastUpdate}
+				</div>
 			</div>
 		</div>
 	{:else}
 		<!-- NOWOCZESNY WIDOK TABLICY TRISTAR (Sleek Dark Glass & Amber LED) -->
-		<div class="rounded-3xl tristar-board border border-slate-800/90 overflow-hidden shadow-2xl">
+		<div class="rounded-3xl tristar-board border border-slate-800/90 overflow-hidden shadow-2xl transition-opacity duration-200 {loading ? 'opacity-90' : 'opacity-100'}">
 			<!-- Belka nagłówkowa tablicy -->
 			<div class="px-5 py-4 border-b border-slate-800/80 bg-slate-900/70 flex flex-wrap items-center justify-between gap-3">
 				<div class="flex items-center gap-2">
 					<span class="relative flex h-2.5 w-2.5">
-						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+						{#if loading}
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+						{:else}
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+						{/if}
 					</span>
 					<span class="text-xs font-bold uppercase tracking-wider text-slate-300">
 						Tablica TRISTAR na żywo
 					</span>
+					{#if loading}
+						<span class="inline-flex items-center gap-1.5 text-[11px] text-amber-400 font-medium ml-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+							<RefreshCw class="w-2.5 h-2.5 animate-spin" />
+							<span>Aktualizowanie...</span>
+						</span>
+					{/if}
 				</div>
 				<div class="text-[11px] font-mono-board text-slate-400">
 					Aktualizacja: <span class="text-amber-400 font-semibold">{lastUpdate}</span>
@@ -198,7 +231,7 @@
 
 			<!-- Lista odjazdów -->
 			<div class="divide-y divide-slate-850">
-				{#each delays as row}
+				{#each delays as row, idx (`${row.line}-${row.tripId || ''}-${row.theoreticalTime}-${idx}`)}
 					{@const countdown = calculateLiveCountdown(row.theoreticalTime, row.delayInSeconds)}
 					<div class="p-4 sm:p-5 hover:bg-slate-900/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
 						<!-- Lewa strona: Linia i Kierunek -->

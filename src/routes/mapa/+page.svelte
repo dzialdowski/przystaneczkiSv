@@ -124,6 +124,12 @@
 		<div class="flex items-center gap-2">
 			<a
 				href="/"
+				onclick={(e) => {
+					if (typeof window !== 'undefined' && window.history.length > 1) {
+						e.preventDefault();
+						window.history.back();
+					}
+				}}
 				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition"
 			>
 				<ArrowLeft class="w-3.5 h-3.5" />

@@ -9,9 +9,10 @@
 		isAdmin: boolean;
 		onRefresh?: () => void;
 		onToggleLegacy?: () => void;
+		isRefreshing?: boolean;
 	}
 
-	let { user, legacyMode, isAdmin, onRefresh, onToggleLegacy }: Props = $props();
+	let { user, legacyMode, isAdmin, onRefresh, onToggleLegacy, isRefreshing = false }: Props = $props();
 
 	let showUserModal = $state(false);
 	let loggingInDev = $state(false);
@@ -102,7 +103,7 @@
 					title="Odśwież tablicę"
 					class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:border-slate-700 active:scale-95 transition"
 				>
-					<RefreshCw class="w-4 h-4" />
+					<RefreshCw class="w-4 h-4 {isRefreshing ? 'animate-spin text-amber-400' : ''}" />
 				</button>
 			{/if}
 

@@ -79,7 +79,7 @@
 </script>
 
 <div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-	<Navbar {user} {legacyMode} {isAdmin} onRefresh={refresh} />
+	<Navbar {user} {legacyMode} {isAdmin} isRefreshing={loading} onRefresh={refresh} />
 
 	{#if toastMsg}
 		<div class="fixed bottom-6 right-6 bg-amber-500 text-slate-950 font-bold px-4 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-2 text-xs">
@@ -92,6 +92,12 @@
 		<div class="flex items-center justify-between">
 			<a
 				href="/"
+				onclick={(e) => {
+					if (typeof window !== 'undefined' && window.history.length > 1) {
+						e.preventDefault();
+						window.history.back();
+					}
+				}}
 				class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition"
 			>
 				<ArrowLeft class="w-4 h-4" />
