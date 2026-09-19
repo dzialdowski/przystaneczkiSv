@@ -182,9 +182,8 @@
 		<div class="bg-slate-900/50 backdrop-blur-md rounded-3xl p-5 sm:p-6 border border-slate-800/80 shadow-xl space-y-4">
 			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 				<div>
-					<h1 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-						<span class="text-amber-400 font-mono-board">#{selectedStopId}</span>
-						<span>{currentStopName}</span>
+					<h1 class="text-xl sm:text-2xl font-black text-white">
+						{currentStopName}
 					</h1>
 					<p class="text-xs text-slate-400 mt-0.5">
 						Odjazdy w czasie rzeczywistym z systemu TRISTAR ZDiZ Gdynia

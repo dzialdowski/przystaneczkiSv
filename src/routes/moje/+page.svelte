@@ -161,41 +161,29 @@
 				class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition"
 			>
 				<ArrowLeft class="w-4 h-4" />
-				Strona główna
+				Powrót do odjazdów
 			</a>
 
-			<div class="flex items-center gap-2">
+			{#if user}
 				<button
-					onclick={toggleLegacy}
-					class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition {legacyMode ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}"
-				>
-					<Sparkles class="w-3.5 h-3.5" />
-					Styl: <span class="font-bold">{legacyMode ? 'bursztynowy (retro)' : 'nowoczesny'}</span>
-				</button>
-
-				<a
-					href="/mapa"
-					class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-cyan-400 hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5 transition"
-				>
-					<MapPin class="w-3.5 h-3.5" />
-					Dodaj z mapy
-				</a>
-
-				<button
-					onclick={() => showAddModal = true}
-					class="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 hover:bg-amber-400 shadow-md shadow-amber-500/20 transition"
+					onclick={() => {
+						showAddModal = true;
+						selectedForAdd = null;
+						searchAddQuery = '';
+						customName = '';
+					}}
+					class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20"
 				>
 					<Plus class="w-4 h-4" />
 					Dodaj przystanek
 				</button>
-			</div>
+			{/if}
 		</div>
 
-		<!-- Tytuł strony -->
-		<div class="bg-slate-900/40 border border-slate-800 rounded-3xl p-6">
-			<h1 class="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-				<Star class="w-7 h-7 text-amber-400 fill-amber-400" />
-				<span>Moje ulubione przystanki</span>
+		<div>
+			<h1 class="text-2xl font-black text-white flex items-center gap-2">
+				<Star class="w-6 h-6 text-amber-400 fill-amber-400" />
+				Moje ulubione przystanki
 			</h1>
 			<p class="text-xs text-slate-400 mt-1">
 				Zarządzaj swoją listą ulubionych przystanków i dostosowuj ich nazwy.
@@ -232,8 +220,8 @@
 				{#each favorites as fav}
 					<div class="p-4 bg-slate-900/60 border border-slate-800/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition">
 						<div class="flex items-center gap-3 min-w-0">
-							<div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-mono-board text-xs font-bold shrink-0">
-								{fav.stop_id}
+							<div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+								<MapPin class="w-5 h-5" />
 							</div>
 
 							<div class="min-w-0 flex-1">
@@ -254,7 +242,6 @@
 									</div>
 								{:else}
 									<h2 class="font-bold text-white text-base truncate">{fav.stop_name}</h2>
-									<p class="text-[11px] text-slate-400 font-mono-board">ID: {fav.stop_id}</p>
 								{/if}
 							</div>
 						</div>
@@ -325,7 +312,6 @@
 								class="w-full p-2.5 text-left text-xs hover:bg-amber-500/10 flex items-center justify-between {selectedForAdd?.stopId === item.stopId ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-slate-200'}"
 							>
 								<span>{item.stopName} {item.stopCode ? `(${item.stopCode})` : ''}</span>
-								<span class="font-mono-board text-[10px] text-slate-400">ID: {item.stopId}</span>
 							</button>
 						{/each}
 					</div>
@@ -339,7 +325,7 @@
 							bind:value={customName}
 							class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
 						/>
-						<p class="text-[11px] text-slate-400">Wybrany słupek: <strong>{selectedForAdd.stopName}</strong> (#{selectedForAdd.stopId})</p>
+						<p class="text-[11px] text-slate-400">Wybrany przystanek: <strong>{selectedForAdd.stopName}</strong></p>
 					</div>
 
 					<div class="flex items-center justify-end gap-2 pt-2">

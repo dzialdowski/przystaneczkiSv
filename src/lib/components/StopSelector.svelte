@@ -58,7 +58,7 @@
 			type="text"
 			value={searchQuery}
 			oninput={handleSearchInput}
-			placeholder="Wpisz nazwę przystanku lub numer (np. Dworzec Główny, Wzgórze, Obłuże)..."
+			placeholder="Wpisz nazwę przystanku (np. Dworzec Główny, Wzgórze, Obłuże)..."
 			class="w-full pl-10 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-lg"
 		/>
 		{#if searchQuery}
@@ -94,7 +94,6 @@
 									</span>
 								</div>
 							</div>
-							<span class="text-[10px] font-mono-board text-slate-400">ID: {item.stopId}</span>
 						</button>
 					{/each}
 				{/if}

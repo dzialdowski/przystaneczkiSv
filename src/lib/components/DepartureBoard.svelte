@@ -174,7 +174,7 @@
 										target="_blank"
 										class="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-200 hover:bg-amber-500 hover:text-black transition"
 									>
-										#{row.vehicleCode}
+										{row.vehicleCode}
 									</a>
 									{#if row.vehicleDetails?.usb}🔋{/if}
 									{#if row.vehicleDetails?.klima}❄️{/if}
@@ -278,7 +278,7 @@
 											rel="noreferrer"
 											class="inline-flex items-center gap-1 text-slate-400 hover:text-white transition"
 										>
-											<span>Pojazd #{row.vehicleCode}</span>
+											<span>Pojazd {row.vehicleCode}</span>
 											{#if row.vehicleDetails?.marka}
 												<span class="text-slate-400 font-medium">({row.vehicleDetails.marka} {row.vehicleDetails.model || ''})</span>
 											{/if}

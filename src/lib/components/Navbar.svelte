@@ -165,9 +165,6 @@
 									<User class="w-4 h-4 text-amber-400" />
 									{user.first_name} {user.username ? `(@${user.username})` : ''}
 								</div>
-								<div class="text-[10px] text-slate-400 font-mono-board mt-0.5">
-									ID: {user.id}
-								</div>
 							</div>
 
 							<div class="space-y-1">
@@ -248,44 +245,29 @@
 						<TelegramLoginWidget {botName} />
 
 						{#if enableDevLogin}
-							<div class="pt-2 border-t border-slate-800/80">
-								<a
-									href="/login"
-									class="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition mb-2"
-								>
+							<div class="mt-3 pt-3 border-t border-slate-800">
+								<div class="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
 									<KeyRound class="w-3.5 h-3.5 text-amber-400" />
-									<span>Otwórz pełną stronę logowania</span>
-								</a>
-
-								<span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-1.5">
-									Lokalny profil testowy (Dev):
-								</span>
-								<div class="grid grid-cols-2 gap-1.5">
+									<span>Szybkie logowanie testowe (dev)</span>
+								</div>
+								<div class="grid grid-cols-2 gap-2">
 									<button
 										disabled={loggingInDev}
-										onclick={() => handleDevLogin('', 'Admin')}
-										class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-white font-medium text-center transition text-[11px]"
+										onclick={() => handleDevLogin('999999999', 'Admin Rafał')}
+										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition"
 									>
-										Admin
+										<span class="block font-bold text-white text-xs">Admin Rafał</span>
+										<span class="block text-[10px] text-amber-400 font-mono-board">Rola: Admin</span>
 									</button>
 									<button
 										disabled={loggingInDev}
-										onclick={() => handleDevLogin('999999999', 'Tester')}
-										class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-white font-medium text-center transition text-[11px]"
+										onclick={() => handleDevLogin('111111111', 'Jan Kowalski')}
+										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition"
 									>
-										Tester
+										<span class="block font-bold text-white text-xs">Jan Kowalski</span>
+										<span class="block text-[10px] text-slate-400 font-mono-board">Rola: User</span>
 									</button>
 								</div>
-							</div>
-						{:else}
-							<div class="pt-2 border-t border-slate-800/80">
-								<a
-									href="/login"
-									class="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
-								>
-									<KeyRound class="w-3.5 h-3.5 text-amber-400" />
-									<span>Otwórz pełną stronę logowania</span>
-								</a>
 							</div>
 						{/if}
 					</div>

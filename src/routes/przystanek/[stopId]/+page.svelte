@@ -118,9 +118,6 @@
 		<!-- Karta tytułowa przystanku -->
 		<div class="bg-slate-900/60 rounded-3xl p-6 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 			<div>
-				<div class="inline-flex items-center gap-1 text-[11px] font-mono-board text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 mb-2">
-					Słupek przystankowy #{data.stopId}
-				</div>
 				<h1 class="text-2xl sm:text-3xl font-black text-white">{data.stopName}</h1>
 				<p class="text-xs text-slate-400 mt-1">Zarząd Komunikacji Miejskiej w Gdyni • TRISTAR</p>
 			</div>

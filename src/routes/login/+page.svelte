@@ -28,7 +28,7 @@
 				</div>
 				<h1 class="text-2xl font-black text-white">Jesteś już zalogowany!</h1>
 				<p class="text-sm text-slate-300">
-					Witaj, <strong>{user.first_name}</strong> ({user.username ? `@${user.username}` : `ID: ${user.id}`})
+					Witaj, <strong>{user.first_name}</strong>{user.username ? ` (@${user.username})` : ''}
 				</p>
 				<div class="pt-4 flex items-center justify-center gap-3">
 					<a
@@ -64,7 +64,7 @@
 					<ul class="list-disc pl-4 space-y-1 text-[11px]">
 						<li>Logowanie odbywa się bezpośrednio i bezpiecznie przez oficjalną usługę Telegram.</li>
 						<li>Twoje ulubione przystanki oraz preferencje stylizacji tablicy są synchronizowane i zapamiętywane na każdym Twoim urządzeniu.</li>
-						<li>Aplikacja odczytuje wyłącznie Twoje publiczne imię i identyfikator konta – nie ma dostępu do Twoich wiadomości ani haseł.</li>
+						<li>Aplikacja odczytuje wyłącznie Twoje publiczne imię – nie ma dostępu do Twoich wiadomości ani haseł.</li>
 					</ul>
 				</div>
 			</div>

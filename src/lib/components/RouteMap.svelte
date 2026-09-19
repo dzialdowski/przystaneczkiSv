@@ -223,7 +223,7 @@
 	});
 
 	function createBusIconHtml(heading: number = 0) {
-		const vCodeLabel = vehicleCode ? `#${vehicleCode}` : `Linia ${lineName}`;
+		const vCodeLabel = vehicleCode ? `${vehicleCode}` : `Linia ${lineName}`;
 		return `
 			<div class="route-bus-marker-wrapper" style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
 				<div style="position: absolute; inset: -2px; border-radius: 9999px; background: rgba(245, 158, 11, 0.35); animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></div>
@@ -259,7 +259,7 @@
 							${lineName}
 						</span>
 						<span style="font-weight: 800; font-size: 13px; color: #f8fafc;">
-							${vCode ? `Pojazd #${vCode}` : 'Autobus na trasie'}
+							${vCode ? `Pojazd ${vCode}` : 'Autobus na trasie'}
 						</span>
 					</div>
 					<span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px; ${
@@ -311,9 +311,7 @@
 				<div style="font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; margin-bottom: 3px;">
 					${stop.stopName}
 				</div>
-				<div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">
-					Słupek #${stop.stopId} ${stop.zone ? `• Strefa: ${stop.zone}` : ''}
-				</div>
+				${stop.zone ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Strefa: ${stop.zone}</div>` : `<div style="margin-bottom: 8px;"></div>`}
 
 				<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; background: rgba(15,23,42,0.7); padding: 6px 8px; border-radius: 8px; border: 1px solid #334155;">
 					<span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; ${
@@ -565,7 +563,7 @@
 				</span>
 				{#if vehicleCode}
 					<span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 border border-amber-400/30">
-						#{vehicleCode}
+						{vehicleCode}
 					</span>
 				{/if}
 			</div>
@@ -598,107 +596,36 @@
 
 	<!-- Status położenia pojazdu banner -->
 	{#if busLocation}
-		<div class="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/70 to-slate-900 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-			<div class="flex items-center gap-2.5">
-				<div class="w-8 h-8 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0">
-					<Bus class="w-4 h-4 text-amber-400 animate-bounce" />
+		<div class="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+			<div class="flex items-center gap-3">
+				<div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+					<Bus class="w-4 h-4" />
 				</div>
 				<div>
-					<div class="font-bold text-slate-100 flex items-center gap-2">
+					<div class="font-bold text-white flex items-center gap-2">
 						<span>{busLocation.statusText}</span>
 						{#if busLocation.statusType === 'in_transit'}
-							<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400/20 text-amber-400 border border-amber-400/30">
-								w drodze
+							<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-400 font-mono font-bold">
+								{busLocation.progressPercent}% trasy
 							</span>
 						{/if}
 					</div>
-					<div class="text-[11px] text-slate-400 mt-0.5">
+					<div class="text-slate-400 text-[11px] mt-0.5">
 						{busLocation.subText}
 					</div>
 				</div>
 			</div>
 
-			{#if busLocation.statusType === 'in_transit'}
-				<div class="flex items-center gap-3 shrink-0">
-					<div class="w-24 sm:w-32 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-						<div
-							class="bg-gradient-to-r from-amber-500 to-amber-300 h-2 rounded-full transition-all duration-1000"
-							style="width: {busLocation.progressPercent}%"
-						></div>
-					</div>
-					<span class="text-[11px] font-mono font-bold text-amber-400">
-						{busLocation.progressPercent}%
-					</span>
-				</div>
-			{/if}
+			<div class="flex items-center gap-2 text-slate-400 text-[11px] shrink-0 self-end sm:self-auto">
+				<Info class="w-3.5 h-3.5 text-amber-400" />
+				<span>Kliknij marker na mapie, aby zobaczyć szczegóły</span>
+			</div>
 		</div>
 	{/if}
 
-	<!-- Kontener na mapę Leaflet -->
-	<div class="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
-		<div
-			bind:this={mapContainer}
-			class="w-full h-80 sm:h-96 z-0"
-			style="min-height: 320px;"
-		></div>
-
-		<!-- Legenda mapy w lewym dolnym rogu -->
-		<div class="absolute bottom-3 left-3 z-[400] bg-slate-900/90 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-800 text-[11px] flex items-center gap-3 shadow-lg pointer-events-none">
-			<div class="flex items-center gap-1.5">
-				<span class="w-3 h-3 rounded-full bg-amber-400 inline-block shadow-sm shadow-amber-400"></span>
-				<span class="text-slate-200 font-medium">Autobus</span>
-			</div>
-			<div class="flex items-center gap-1.5">
-				<span class="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-400/40 inline-block"></span>
-				<span class="text-slate-300">Następny</span>
-			</div>
-			<div class="flex items-center gap-1.5">
-				<span class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-amber-400 inline-block"></span>
-				<span class="text-slate-400">Przystanek</span>
-			</div>
-			<div class="flex items-center gap-1.5">
-				<span class="w-2 h-2 rounded-full bg-slate-700 inline-block"></span>
-				<span class="text-slate-500">Odjechany</span>
-			</div>
-		</div>
-	</div>
-
-	<!-- Notka informacyjna -->
-	<div class="text-[11px] text-slate-500 flex items-start gap-2 pt-1">
-		<Info class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-		<span>
-			Lokalizacja autobusu jest estymowana na podstawie rozkładu jazdy oraz bieżących opóźnień telemetrycznych systemu TRISTAR. Kliknij na ikonę autobusu lub przystanku na mapie, aby sprawdzić szczegóły.
-		</span>
-	</div>
+	<!-- Kontener mapy Leaflet -->
+	<div
+		bind:this={mapContainer}
+		class="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-800 relative z-10 shadow-inner"
+	></div>
 </div>
-
-<style>
-	:global(.custom-route-stop-marker),
-	:global(.custom-route-bus-marker) {
-		background: transparent;
-		border: none;
-	}
-
-	:global(.route-map-popup .leaflet-popup-content-wrapper) {
-		background: #0f172a !important;
-		color: #f8fafc !important;
-		border-radius: 14px !important;
-		border: 1px solid #334155 !important;
-		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7) !important;
-		padding: 4px !important;
-	}
-
-	:global(.route-map-popup .leaflet-popup-tip) {
-		background: #0f172a !important;
-		border: 1px solid #334155 !important;
-	}
-
-	:global(.route-map-popup a.leaflet-popup-close-button) {
-		color: #94a3b8 !important;
-		padding: 8px !important;
-	}
-
-	:global(.route-map-popup a.leaflet-popup-close-button:hover) {
-		color: #f8fafc !important;
-	}
-</style>

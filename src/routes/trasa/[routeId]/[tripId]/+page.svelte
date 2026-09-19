@@ -155,10 +155,6 @@
 				<ArrowLeft class="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
 				<span>Powrót do odjazdów</span>
 			</a>
-
-			<div class="text-xs text-slate-500 font-mono-board">
-				ID Trasy: {data.routeId} • Kurs: {data.tripId}
-			</div>
 		</div>
 
 		<!-- Karta nagłówkowa linii -->
@@ -174,7 +170,7 @@
 						{#if data.vehicleCode}
 							<div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/80 text-amber-400 text-xs font-mono font-bold">
 								<Bus class="w-3.5 h-3.5" />
-								<span>Pojazd #{data.vehicleCode}</span>
+								<span>Pojazd {data.vehicleCode}</span>
 							</div>
 						{/if}
 					</div>
@@ -230,7 +226,7 @@
 							<div class="flex items-center gap-2">
 								<h2 class="text-sm sm:text-base font-bold text-white">Pojazd obsługujący ten kurs</h2>
 								<span class="text-xs font-mono-board font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 shadow-sm">
-									#{vCode}
+									{vCode}
 								</span>
 							</div>
 							<p class="text-xs text-slate-400 mt-0.5">
@@ -259,7 +255,7 @@
 						<div class="w-full sm:w-48 h-32 rounded-2xl overflow-hidden border border-slate-700/80 shrink-0 bg-slate-950 relative group">
 							<img
 								src={data.vehicleDetails.photoURL}
-								alt="Pojazd #{vCode}"
+								alt="Pojazd {vCode}"
 								class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
 								loading="lazy"
 							/>
@@ -302,7 +298,7 @@
 						<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
 							<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
 								<span class="text-slate-500 block text-[10px]">Numer boczny</span>
-								<span class="font-bold text-white font-mono-board text-sm">#{vCode}</span>
+								<span class="font-bold text-white font-mono-board text-sm">{vCode}</span>
 							</div>
 
 							{#if data.vehicleDetails?.marka}
@@ -372,13 +368,11 @@
 										{/if}
 									</div>
 
-									<div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono-board mt-0.5">
-										<span>Przystanek #{stop.stopId}</span>
-										{#if stop.zone}
-											<span>•</span>
+									{#if stop.zone}
+										<div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono-board mt-0.5">
 											<span>Strefa: {stop.zone}</span>
-										{/if}
-									</div>
+										</div>
+									{/if}
 								</div>
 
 								<!-- Czasy przyjazdu/odjazdu -->

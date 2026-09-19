@@ -61,9 +61,7 @@
 							<div style="font-weight: 800; font-size: 14px; color: #0f172a; margin-bottom: 2px;">
 								${s.stopName}
 							</div>
-							<div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
-								Słupek #${s.stopId} ${s.zoneId ? `• ${s.zoneId}` : ''}
-							</div>
+							${s.zoneId ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Strefa: ${s.zoneId}</div>` : `<div style="margin-bottom: 8px;"></div>`}
 							<div style="display: flex; gap: 6px;">
 								<a href="/przystanek/${s.stopId}" style="display: inline-block; background: #f59e0b; color: #090d16; font-weight: 700; font-size: 11px; padding: 6px 10px; border-radius: 8px; text-decoration: none;">
 									Odjazdy na żywo ➔

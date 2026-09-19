@@ -156,7 +156,7 @@
 		</div>
 
 		<!-- Tabela danych -->
-		{#if activeTab === 'vehicles'}\
+		{#if activeTab === 'vehicles'}
 			<div class="bg-slate-900/40 rounded-3xl p-6 border border-slate-800 space-y-4">
 				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 					<div>
@@ -185,7 +185,7 @@
 						<tbody class="divide-y divide-slate-850">
 							{#each filteredVehicles as v}
 								<tr class="hover:bg-slate-900/50">
-									<td class="p-3 font-mono-board font-black text-amber-400">#{v.Bus}</td>
+									<td class="p-3 font-mono-board font-black text-amber-400">{v.Bus}</td>
 									<td class="p-3">
 										{#if v.photoURL}
 											<img src={v.photoURL} alt="Bus {v.Bus}" class="w-14 h-9 object-cover rounded-lg border border-slate-700" />
@@ -227,7 +227,7 @@
 							<tr class="hover:bg-slate-900/50">
 								<td class="p-3 font-mono-board text-slate-300">{f.user_id}</td>
 								<td class="p-3 font-semibold text-white">{f.stop_name}</td>
-								<td class="p-3 font-mono-board text-amber-400">#{f.stop_id}</td>
+								<td class="p-3 font-mono-board text-amber-400">{f.stop_id}</td>
 								<td class="p-3 text-right">
 									<a
 										href="/przystanek/{f.stop_id}"
