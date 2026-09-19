@@ -61,9 +61,11 @@
 	<div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
 		<!-- Logo -->
 		<a href="/" class="flex items-center gap-2.5 group">
-			<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20 group-hover:scale-105 transition">
-				<Bus class="w-5 h-5" />
-			</div>
+			<img
+				src="/logo.svg"
+				alt="Przystaneczki Gdynia"
+				class="w-10 h-10 rounded-xl shadow-lg shadow-amber-500/10 group-hover:scale-105 transition"
+			/>
 			<div>
 				<span class="font-extrabold tracking-wider text-base sm:text-lg block leading-tight text-white group-hover:text-amber-400 transition">
 					PRZYSTANECZKI

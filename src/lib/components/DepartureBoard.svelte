@@ -176,8 +176,12 @@
 									>
 										{row.vehicleCode}
 									</a>
-									{#if row.vehicleDetails?.usb}🔋{/if}
-									{#if row.vehicleDetails?.klima}❄️{/if}
+									{#if row.vehicleDetails?.usb}
+										<img src="/USB.png" alt="USB" class="inline-block w-3.5 h-3.5 ml-1 align-middle" title="Ładowarki USB w pojeździe" />
+									{/if}
+									{#if row.vehicleDetails?.klima}
+										<img src="/Klima.png" alt="Klima" class="inline-block w-3.5 h-3.5 ml-1 align-middle" title="Pojazd klimatyzowany" />
+									{/if}
 								{:else}
 									-
 								{/if}

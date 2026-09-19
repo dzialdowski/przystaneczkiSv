@@ -1,7 +1,7 @@
 {
-  "name": "Przystaneczki ZKM Gdynia",
+  "name": "Przystaneczki Gdynia",
   "short_name": "Przystaneczki",
-  "description": "Odjazdy autobusów i trolejbusów w czasie rzeczywistym z systemu TRISTAR ZKM Gdynia",
+  "description": "Odjazdy autobusów i trolejbusów w czasie rzeczywistym z systemu TRISTAR Gdynia",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

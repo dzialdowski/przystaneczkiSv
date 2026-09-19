@@ -17,7 +17,8 @@
 		"test": "npm run test:unit -- --run",
 		"test:e2e": "playwright test --pass-with-no-tests",
 		"scrape:vehicles": "node scripts/scrape-vehicles.mjs",
-		"sync:gtfs": "node scripts/sync-gtfs.mjs"
+		"sync:gtfs": "node scripts/sync-gtfs.mjs",
+		"generate:assets": "node scripts/generate-assets.mjs"
 	},
 	"engines": {
 		"node": ">=22.0.0"

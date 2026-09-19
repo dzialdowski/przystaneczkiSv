@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+import { chromium } from 'playwright';
+import fs from 'fs';
+import path from 'path';
+
+// 1. Logo SVG (App Icon - Przystaneczki Gdynia)
+const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <!-- Background Gradient -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -149,4 +154,129 @@
     <path d="M 222 436 A 34 34 0 0 1 290 436" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" opacity="0.5" />
     <path d="M 208 436 A 48 48 0 0 1 304 436" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.3" />
   </g>
-</svg>
+</svg>`;
+
+// 2. Klima Icon SVG (Air Conditioning / Cool Climate)
+// Clean 24x24 pixel grid vector icon: modern ice snowflake with cooling breeze
+const klimaSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="klimaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <!-- Drop shadow background for legibility on any backdrop -->
+  <g stroke="url(#klimaGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Vertical Spine -->
+    <line x1="12" y1="2.5" x2="12" y2="21.5" />
+    <!-- Diagonal Spines -->
+    <line x1="3.8" y1="7.25" x2="20.2" y2="16.75" />
+    <line x1="3.8" y1="16.75" x2="20.2" y2="7.25" />
+
+    <!-- Top & Bottom Arrows / V-branches -->
+    <path d="M 9.5 5 L 12 3 L 14.5 5" />
+    <path d="M 9.5 19 L 12 21 L 14.5 19" />
+
+    <!-- Diagonal V-branches -->
+    <path d="M 5 10 L 4 7.5 L 6.8 7.5" />
+    <path d="M 19 14 L 20 16.5 L 17.2 16.5" />
+    <path d="M 6.8 16.5 L 4 16.5 L 5 14" />
+    <path d="M 17.2 7.5 L 20 7.5 L 19 10" />
+  </g>
+  <!-- Central Ice Core -->
+  <circle cx="12" cy="12" r="2.2" fill="#38bdf8" />
+</svg>`;
+
+// 3. USB Icon SVG (USB Charger / Power)
+// Clean 24x24 pixel grid vector icon: crisp USB trident symbol with power accents
+const usbSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="usbGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+  </defs>
+  <g stroke="url(#usbGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Main Center Stem -->
+    <line x1="12" y1="4.5" x2="12" y2="18.5" />
+
+    <!-- Left Branch -->
+    <path d="M 8 10.5 L 8 13.5 C 8 15.5 12 15.5 12 15.5" />
+
+    <!-- Right Branch -->
+    <path d="M 16 9 L 16 12 C 16 14.5 12 14.5 12 14.5" />
+  </g>
+
+  <!-- Terminals -->
+  <!-- Top Center Arrow -->
+  <polygon points="12,2 9,6 15,6" fill="#34d399" />
+
+  <!-- Left Branch Square -->
+  <rect x="6.5" y="8.5" width="3" height="3" rx="0.5" fill="#34d399" />
+
+  <!-- Right Branch Circle -->
+  <circle cx="16" cy="8" r="1.8" fill="#34d399" />
+
+  <!-- Bottom Base Circle -->
+  <circle cx="12" cy="19.5" r="2" fill="#10b981" />
+</svg>`;
+
+async function main() {
+  console.log('Starting asset generation...');
+
+  // Save SVGs
+  fs.writeFileSync('static/logo.svg', logoSvg.trim());
+  fs.writeFileSync('src/lib/assets/favicon.svg', logoSvg.trim());
+  fs.writeFileSync('static/favicon.svg', logoSvg.trim());
+  fs.writeFileSync('static/Klima.svg', klimaSvg.trim());
+  fs.writeFileSync('static/USB.svg', usbSvg.trim());
+  console.log('Saved SVG files.');
+
+  // Launch browser for pixel-perfect PNG rendering
+  const browser = await chromium.launch({ channel: 'msedge' });
+  const context = await browser.newContext({ deviceScaleFactor: 2 });
+  const page = await context.newPage();
+
+  // Helper to render HTML/SVG directly to PNG
+  async function renderSvgToPng(svgContent, width, height, outputPath) {
+    const html = `<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { width: ${width}px; height: ${height}px; background: transparent; overflow: hidden; }
+          svg { width: 100%; height: 100%; display: block; }
+        </style>
+      </head>
+      <body>
+        ${svgContent}
+      </body>
+    </html>`;
+
+    await page.setViewportSize({ width, height });
+    await page.setContent(html, { waitUntil: 'load' });
+    const buf = await page.screenshot({
+      omitBackground: true,
+      clip: { x: 0, y: 0, width, height }
+    });
+    fs.writeFileSync(outputPath, buf);
+    console.log(`Rendered ${outputPath} (${width}x${height}, ${buf.length} bytes)`);
+  }
+
+  // 1. Render App Icons:
+  // nice-higherres.png: 512x512
+  await renderSvgToPng(logoSvg, 512, 512, 'static/nice-higherres.png');
+
+  // nice-highres.png: 192x192
+  await renderSvgToPng(logoSvg, 192, 192, 'static/nice-highres.png');
+
+  // 2. Render Amenities Icons (24x24):
+  await renderSvgToPng(klimaSvg, 24, 24, 'static/Klima.png');
+  await renderSvgToPng(usbSvg, 24, 24, 'static/USB.png');
+
+  await browser.close();
+  console.log('Asset generation completed successfully!');
+}
+
+main().catch(console.error);
