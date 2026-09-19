@@ -77,6 +77,7 @@ Wszystkie poufne dane i parametry konfiguracyjne zostały przeniesione do zmienn
 | `TRISTAR_API_BASE_URL` | Nie | Adres bazowy API TRISTAR | `http://api.zdiz.gdynia.pl/pt` |
 | `GTFS_ZIP_URL` | Nie | Bezpośredni URL do archiwum GTFS | `http://api.zdiz.gdynia.pl/pt/gtfs.zip` |
 | `ZKM_BASE_URL` | Nie | Bazowy URL serwisu ZKM Gdynia | `https://zkmgdynia.pl` |
+| `PUBLIC_CARTO_API_KEY` / `CARTO_API_KEY` | Nie | Klucz API CARTO Basemaps (usuwa znak wodny z kafelków mapy) | Uzyskaj bezpłatnie na https://carto.com/basemaps/apikey |
 
 ---
 

@@ -8,6 +8,12 @@ export const load: LayoutServerLoad = async (event) => {
 	const botName = process.env.PUBLIC_BOT_NAME || BOT_USERNAME;
 	const botId = process.env.PUBLIC_BOT_ID || BOT_ID;
 	const dbServer = process.env.MSSQL_SERVER || '';
+	const cartoApiKey =
+		process.env.PUBLIC_CARTO_API_KEY ||
+		process.env.CARTO_API_KEY ||
+		process.env.PUBLIC_CARTO_BASEMAPS_API_KEY ||
+		process.env.CARTO_BASEMAPS_API_KEY ||
+		'';
 
 	if (user) {
 		const [favorites, settings] = await Promise.all([
@@ -23,7 +29,8 @@ export const load: LayoutServerLoad = async (event) => {
 			botName,
 			botId,
 			enableDevLogin,
-			dbServer
+			dbServer,
+			cartoApiKey
 		};
 	}
 
@@ -35,6 +42,7 @@ export const load: LayoutServerLoad = async (event) => {
 		botName,
 		botId,
 		enableDevLogin,
-		dbServer
+		dbServer,
+		cartoApiKey
 	};
 };

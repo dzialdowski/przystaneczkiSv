@@ -62,10 +62,11 @@ W portalu Azure przejdź do swojej aplikacji: **Settings** -> **Environment vari
 > **Domena bota w Telegramie**:
 > Wyślij do `@BotFather` komendę `/setdomain`, wybierz swojego bota i podaj domenę produkcyjną: `<twoja-aplikacja>.azurewebsites.net` (bez `https://`).
 
-### Zewnętrzne API
+### Zewnętrzne API & Mapy
 * **`TRISTAR_API_BASE_URL`**: `http://api.zdiz.gdynia.pl/pt`
 * **`GTFS_ZIP_URL`**: `http://api.zdiz.gdynia.pl/pt/gtfs.zip`
 * **`ZKM_BASE_URL`**: `https://zkmgdynia.pl`
+* **`PUBLIC_CARTO_API_KEY`** / **`CARTO_API_KEY`**: Klucz CARTO Basemaps API (opcjonalny; usuwa znak wodny *"API key required"* z podkładu mapowego). Klucz można wygenerować bezpłatnie na stronie [carto.com/basemaps/apikey](https://carto.com/basemaps/apikey).
 
 ---
 

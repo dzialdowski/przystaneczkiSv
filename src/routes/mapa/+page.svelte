@@ -4,6 +4,7 @@
 	import { ArrowLeft, MapPin, Navigation, Search, Star, Bus } from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import type { TristarStop } from '$lib/server/tristar';
+	import { getCartoTileUrl, CARTO_ATTRIBUTION } from '$lib/carto';
 
 	let user = $derived(page.data.user);
 	let legacyMode = $derived(page.data.legacyMode || false);
@@ -27,9 +28,9 @@
 			zoomControl: true
 		}).setView([54.5189, 18.5305], 13);
 
-		// Stylowe ciemne kafelki CartoDB Dark Matter
-		L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+		// Stylowe kafelki CartoDB Voyager z obsługą klucza API
+		L.tileLayer(getCartoTileUrl(page.data.cartoApiKey), {
+			attribution: CARTO_ATTRIBUTION,
 			subdomains: 'abcd',
 			maxZoom: 19
 		}).addTo(mapInstance);
@@ -161,24 +162,38 @@
 
 			<button
 				onclick={locateUser}
-				class="px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 hover:bg-cyan-400 transition"
-				title="Zlokalizuj mnie"
+				class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-sm"
 			>
 				<Navigation class="w-3.5 h-3.5" />
-				<span class="hidden sm:inline">Moja pozycja</span>
+				Moja pozycja
 			</button>
 		</div>
 	</div>
 
-	<!-- Kontener Mapy -->
-	<div class="relative flex-1 w-full h-full">
+	<!-- Kontener mapy -->
+	<div class="flex-1 relative w-full h-full">
 		{#if loading}
-			<div class="absolute inset-0 z-20 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-				<div class="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-				<p class="text-xs font-bold text-slate-300">Ładowanie przystanków i mapy ZKM...</p>
+			<div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-3">
+				<div class="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+				<span class="text-xs text-slate-400 font-medium">Ładowanie przystanków na mapę...</span>
 			</div>
 		{/if}
-
-		<div bind:this={mapContainer} class="w-full h-full"></div>
+		<div bind:this={mapContainer} class="w-full h-full z-0"></div>
 	</div>
 </div>
+
+<style>
+	:global(.custom-stop-marker) {
+		background: transparent;
+		border: none;
+	}
+	:global(.leaflet-popup-content-wrapper) {
+		background: #ffffff !important;
+		border-radius: 14px !important;
+		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+		border: 1px solid #e2e8f0 !important;
+	}
+	:global(.leaflet-popup-tip) {
+		background: #ffffff !important;
+	}
+</style>

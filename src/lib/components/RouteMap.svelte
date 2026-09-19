@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import {
 		Bus,
 		Maximize2,
@@ -7,6 +8,7 @@
 		Compass
 	} from 'lucide-svelte';
 	import { getWarsawTime, diffMinutes } from '$lib/time';
+	import { getCartoTileUrl, CARTO_ATTRIBUTION } from '$lib/carto';
 
 	interface RouteStop {
 		stopId: number;
@@ -42,6 +44,7 @@
 		delaySeconds?: number;
 		serverNowMinutes?: number;
 		serverTimestamp?: number;
+		cartoApiKey?: string;
 	}
 
 	let {
@@ -52,7 +55,8 @@
 		vehicleDetails = null,
 		delaySeconds = 0,
 		serverNowMinutes,
-		serverTimestamp
+		serverTimestamp,
+		cartoApiKey = ''
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement | null = $state(null);
@@ -98,53 +102,34 @@
 			return s.estMinutes;
 		}
 		if (s.estimatedTime && s.estimatedTime.includes(':')) {
-			const [h, m] = s.estimatedTime.split(':').map(Number);
-			if (!isNaN(h) && !isNaN(m)) return h * 60 + m;
+			const [hh, mm] = s.estimatedTime.split(':').map(Number);
+			if (!isNaN(hh) && !isNaN(mm)) return hh * 60 + mm;
+		}
+		if (s.theoreticalTime && s.theoreticalTime.includes(':')) {
+			const [hh, mm] = s.theoreticalTime.split(':').map(Number);
+			if (!isNaN(hh) && !isNaN(mm)) return hh * 60 + mm;
 		}
 		return 0;
 	}
 
-	function formatDelay(sec: number) {
-		if (Math.abs(sec) < 60) return { text: 'Punktualnie', type: 'on-time' };
-		if (sec > 0) {
-			const m = Math.floor(sec / 60);
-			const s = sec % 60;
-			return { text: s > 0 ? `Opóźniony +${m}m ${s}s` : `Opóźniony +${m}m`, type: 'delayed' };
-		} else {
-			const m = Math.floor(Math.abs(sec) / 60);
-			return { text: `Przyspieszony -${m}m`, type: 'early' };
-		}
+	function formatDelay(sec: number): { text: string; type: 'on-time' | 'delayed' | 'early' } {
+		const m = Math.round(sec / 60);
+		if (m > 0) return { text: `+${m} min`, type: 'delayed' };
+		if (m < 0) return { text: `${m} min`, type: 'early' };
+		return { text: 'O czasie', type: 'on-time' };
 	}
 
-	// Szacowanie położenia autobusu na trasie
+	// Dynamiczne wyliczenie szacowanej pozycji autobusu w czasie rzeczywistym
 	let busLocation = $derived.by(() => {
 		if (validStops.length === 0) return null;
-		if (validStops.length === 1) {
-			return {
-				lat: validStops[0].lat,
-				lon: validStops[0].lon,
-				heading: 0,
-				statusText: `Na przystanku: ${validStops[0].stopName}`,
-				subText: `Planowy odjazd: ${validStops[0].estimatedTime}`,
-				statusType: 'at_stop' as const,
-				nextStop: validStops[0],
-				prevStop: null,
-				progressPercent: 0
-			};
+
+		// Znajdź indeks następnego przystanku (isNext === true lub pierwszy nie-isPassed z czasem >= teraz)
+		let nextIdx = validStops.findIndex((s) => s.isNext);
+		if (nextIdx === -1) {
+			nextIdx = validStops.findIndex((s) => !s.isPassed);
 		}
 
-		// Szukamy pierwszego przystanku, do którego autobus jeszcze nie dotarł (diff >= 0)
-		let nextIdx = -1;
-		for (let i = 0; i < validStops.length; i++) {
-			const stopMin = getStopMinutes(validStops[i]);
-			const diff = diffMinutes(stopMin, clientNowMinutes);
-			if (diff >= 0) {
-				nextIdx = i;
-				break;
-			}
-		}
-
-		// Przypadek 1: Wszystkie przystanki już minęły (koniec trasy)
+		// Przypadek 1: Wszystkie przystanki zostały już obsłużone (kurs dojechał do pętli)
 		if (nextIdx === -1) {
 			const lastStop = validStops[validStops.length - 1];
 			return {
@@ -349,12 +334,13 @@
 				attributionControl: true
 			});
 
+			const effectiveCartoApiKey = cartoApiKey || page.data.cartoApiKey || '';
+
 			// Stylowe kafelki CartoDB Voyager z dobrą widocznością ulic i przystanków
 			L.tileLayer(
-				'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+				getCartoTileUrl(effectiveCartoApiKey, 'voyager'),
 				{
-					attribution:
-						'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+					attribution: CARTO_ATTRIBUTION,
 					subdomains: 'abcd',
 					maxZoom: 19
 				}
