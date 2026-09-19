@@ -252,11 +252,11 @@
 
 				<div class="flex flex-col sm:flex-row gap-6 items-start">
 					{#if data.vehicleDetails?.photoURL}
-						<div class="w-full sm:w-48 h-32 rounded-2xl overflow-hidden border border-slate-700/80 shrink-0 bg-slate-950 relative group">
+						<div class="w-full sm:w-48 rounded-2xl overflow-hidden border border-slate-700/80 shrink-0 bg-slate-950 relative group">
 							<img
 								src={data.vehicleDetails.photoURL}
 								alt="Pojazd {vCode}"
-								class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+								class="w-full h-auto block group-hover:scale-105 transition duration-300"
 								loading="lazy"
 							/>
 						</div>
