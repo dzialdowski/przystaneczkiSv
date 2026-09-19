@@ -6,6 +6,7 @@
 		Info,
 		Compass
 	} from 'lucide-svelte';
+	import { getWarsawTime, diffMinutes } from '$lib/time';
 
 	interface RouteStop {
 		stopId: number;
@@ -61,6 +62,7 @@
 	let busMarker: any = null;
 	let leafletLib: any = null;
 	let isMapReady = $state(false);
+	let hasFittedBounds = false;
 
 	// Odfiltruj tylko te przystanki, które mają prawidłowe współrzędne
 	let validStops = $derived(
@@ -80,19 +82,14 @@
 		const start = performance.now();
 		const timer = setInterval(() => {
 			elapsedMs = performance.now() - start;
-		}, 4000);
+		}, 3000);
 
 		return () => clearInterval(timer);
 	});
 
-	// Zegar minutowy zsynchronizowany z serwerem i płynnie kroczący
+	// Zegar minutowy zsynchronizowany z czasem polskim (Europe/Warsaw) i płynnie kroczący
 	let clientNowMinutes = $derived.by(() => {
-		const baseMin =
-			serverNowMinutes ??
-			(() => {
-				const d = new Date();
-				return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
-			})();
+		const baseMin = serverNowMinutes ?? getWarsawTime().nowMinutes;
 		return baseMin + elapsedMs / 60000;
 	});
 
@@ -105,13 +102,6 @@
 			if (!isNaN(h) && !isNaN(m)) return h * 60 + m;
 		}
 		return 0;
-	}
-
-	function calcDiffMinutes(stopMin: number, nowMin: number): number {
-		let diff = (stopMin - nowMin) % 1440;
-		if (diff < -720) diff += 1440;
-		if (diff > 720) diff -= 1440;
-		return diff;
 	}
 
 	function formatDelay(sec: number) {
@@ -147,7 +137,7 @@
 		let nextIdx = -1;
 		for (let i = 0; i < validStops.length; i++) {
 			const stopMin = getStopMinutes(validStops[i]);
-			const diff = calcDiffMinutes(stopMin, clientNowMinutes);
+			const diff = diffMinutes(stopMin, clientNowMinutes);
 			if (diff >= 0) {
 				nextIdx = i;
 				break;
@@ -173,7 +163,7 @@
 		// Przypadek 2: Pierwszy przystanek ma diff >= 0 (autobus jeszcze nie wystartował)
 		if (nextIdx === 0) {
 			const firstStop = validStops[0];
-			const diff = calcDiffMinutes(getStopMinutes(firstStop), clientNowMinutes);
+			const diff = diffMinutes(getStopMinutes(firstStop), clientNowMinutes);
 			return {
 				lat: firstStop.lat,
 				lon: firstStop.lon,
@@ -193,10 +183,10 @@
 
 		const tPrev = getStopMinutes(prevStop);
 		const tNext = getStopMinutes(nextStop);
-		let segmentDuration = calcDiffMinutes(tNext, tPrev);
+		let segmentDuration = diffMinutes(tNext, tPrev);
 		if (segmentDuration <= 0) segmentDuration = 2; // Domyślnie 2 minuty między przystankami
 
-		const elapsed = calcDiffMinutes(clientNowMinutes, tPrev);
+		const elapsed = diffMinutes(clientNowMinutes, tPrev);
 		let ratio = elapsed / segmentDuration;
 		// Zapewniamy, że ikona autobusu znajduje się widocznie na odcinku drogi
 		ratio = Math.max(0.06, Math.min(0.94, ratio));
@@ -214,7 +204,7 @@
 				Math.cos(dLon);
 		const heading = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 
-		const remainingMin = Math.max(0, Math.round(calcDiffMinutes(tNext, clientNowMinutes)));
+		const remainingMin = Math.max(0, Math.round(diffMinutes(tNext, clientNowMinutes)));
 
 		return {
 			lat,
@@ -466,12 +456,13 @@
 			});
 		});
 
-		// Dopasuj widok do całej trasy
-		if (polylineLayer && latLngs.length > 0) {
+		// Dopasuj widok do całej trasy tylko raz na początku
+		if (!hasFittedBounds && polylineLayer && latLngs.length > 0) {
 			mapInstance.fitBounds(polylineLayer.getBounds(), {
 				padding: [35, 35],
 				maxZoom: 16
 			});
+			hasFittedBounds = true;
 		}
 
 		updateBusMarker();
@@ -560,112 +551,121 @@
 	});
 </script>
 
-<div class="bg-slate-900/70 rounded-3xl p-5 sm:p-6 border border-slate-800/90 shadow-xl backdrop-blur-sm space-y-4">
-	<!-- Pasek nagłówka sekcji mapy -->
-	<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-		<div class="flex items-center gap-3">
-			<div class="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-sm shadow-amber-500/10">
-				<Compass class="w-5 h-5" />
-			</div>
-			<div>
-				<div class="flex items-center gap-2 flex-wrap">
-					<h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
-						Mapa trasy i lokalizacja autobusu
-					</h2>
-					<span class="text-xs font-mono-board font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 shadow-sm">
-						Linia {lineName}
+<div class="bg-slate-900/40 rounded-3xl p-6 border border-slate-800/80 shadow-lg space-y-4">
+	<!-- Nagłówek i przyciski kontrolne -->
+	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4">
+		<div>
+			<div class="flex items-center gap-2">
+				<h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+					<Compass class="w-5 h-5 text-amber-400" />
+					Mapa trasy i lokalizacja autobusu
+				</h2>
+				<span class="text-xs font-mono font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950">
+					Linia {lineName}
+				</span>
+				{#if vehicleCode}
+					<span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 border border-amber-400/30">
+						#{vehicleCode}
 					</span>
-					{#if vehicleCode}
-						<span class="text-xs font-mono-board font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
-							#{vehicleCode}
-						</span>
-					{/if}
-				</div>
-				<p class="text-xs text-slate-400 mt-0.5">
-					Przebieg linii ze wszystkimi przystankami oraz szacowana pozycja na żywo
-				</p>
+				{/if}
 			</div>
+			<p class="text-xs text-slate-400 mt-1">
+				Przebieg linii ze wszystkimi przystankami oraz szacowana pozycja na żywo
+			</p>
 		</div>
 
-		<!-- Przyciski nawigacji po mapie -->
 		<div class="flex items-center gap-2">
 			<button
+				type="button"
 				onclick={fitRoute}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
-				title="Dopasuj widok do całej trasy"
+				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
 			>
 				<Maximize2 class="w-3.5 h-3.5 text-amber-400" />
-				<span>Cała trasa</span>
+				Cała trasa
 			</button>
 
 			<button
+				type="button"
 				onclick={focusBus}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 transition"
-				title="Przybliż do aktualnej pozycji autobusu"
+				class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 transition disabled:opacity-50"
+				disabled={!busLocation}
 			>
 				<Bus class="w-3.5 h-3.5" />
-				<span>Gdzie jest autobus?</span>
+				Gdzie jest autobus?
 			</button>
 		</div>
 	</div>
 
-	<!-- Status położenia autobusu w czasie rzeczywistym -->
+	<!-- Status położenia pojazdu banner -->
 	{#if busLocation}
-		<div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
-			<div class="flex items-center gap-2.5 min-w-0">
-				<span class="relative flex h-2.5 w-2.5 shrink-0">
-					<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-					<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-				</span>
-				<div class="truncate">
-					<span class="font-bold text-slate-200">{busLocation.statusText}</span>
-					<span class="text-slate-400 ml-1.5">({busLocation.subText})</span>
+		<div class="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/70 to-slate-900 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+			<div class="flex items-center gap-2.5">
+				<div class="w-8 h-8 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0">
+					<Bus class="w-4 h-4 text-amber-400 animate-bounce" />
+				</div>
+				<div>
+					<div class="font-bold text-slate-100 flex items-center gap-2">
+						<span>{busLocation.statusText}</span>
+						{#if busLocation.statusType === 'in_transit'}
+							<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400/20 text-amber-400 border border-amber-400/30">
+								w drodze
+							</span>
+						{/if}
+					</div>
+					<div class="text-[11px] text-slate-400 mt-0.5">
+						{busLocation.subText}
+					</div>
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2 text-slate-400 font-mono-board text-[11px] shrink-0">
-				<span>Postęp trasy: <strong class="text-amber-400">{busLocation.progressPercent}%</strong></span>
-			</div>
+			{#if busLocation.statusType === 'in_transit'}
+				<div class="flex items-center gap-3 shrink-0">
+					<div class="w-24 sm:w-32 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+						<div
+							class="bg-gradient-to-r from-amber-500 to-amber-300 h-2 rounded-full transition-all duration-1000"
+							style="width: {busLocation.progressPercent}%"
+						></div>
+					</div>
+					<span class="text-[11px] font-mono font-bold text-amber-400">
+						{busLocation.progressPercent}%
+					</span>
+				</div>
+			{/if}
 		</div>
 	{/if}
 
-	<!-- Kontener Mapy -->
-	<div class="relative w-full h-[420px] sm:h-[480px] rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
-		{#if validStops.length === 0}
-			<div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-slate-400">
-				<Info class="w-8 h-8 text-slate-500" />
-				<p class="text-xs">Brak dostępnych współrzędnych geograficznych przystanków dla tego wariantu trasy.</p>
-			</div>
-		{:else}
-			<div bind:this={mapContainer} class="w-full h-full z-0"></div>
+	<!-- Kontener na mapę Leaflet -->
+	<div class="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
+		<div
+			bind:this={mapContainer}
+			class="w-full h-80 sm:h-96 z-0"
+			style="min-height: 320px;"
+		></div>
 
-			<!-- Nakładka legendy na mapie -->
-			<div class="absolute bottom-3 left-3 z-[400] bg-slate-950/85 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-lg flex flex-wrap items-center gap-3 pointer-events-auto">
-				<div class="flex items-center gap-1.5">
-					<div class="w-4 h-4 rounded-md bg-amber-500 text-slate-950 font-black flex items-center justify-center text-[9px] shadow-sm">
-						🚌
-					</div>
-					<span class="font-medium">Autobus</span>
-				</div>
-				<div class="flex items-center gap-1.5">
-					<div class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-slate-950 shadow-sm animate-pulse"></div>
-					<span class="font-medium">Następny</span>
-				</div>
-				<div class="flex items-center gap-1.5">
-					<div class="w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-amber-500"></div>
-					<span class="font-medium">Przystanek</span>
-				</div>
-				<div class="flex items-center gap-1.5">
-					<div class="w-3 h-3 rounded-full bg-slate-800 border border-slate-600"></div>
-					<span class="font-medium text-slate-400">Odjechany</span>
-				</div>
+		<!-- Legenda mapy w lewym dolnym rogu -->
+		<div class="absolute bottom-3 left-3 z-[400] bg-slate-900/90 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-800 text-[11px] flex items-center gap-3 shadow-lg pointer-events-none">
+			<div class="flex items-center gap-1.5">
+				<span class="w-3 h-3 rounded-full bg-amber-400 inline-block shadow-sm shadow-amber-400"></span>
+				<span class="text-slate-200 font-medium">Autobus</span>
 			</div>
-		{/if}
+			<div class="flex items-center gap-1.5">
+				<span class="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-400/40 inline-block"></span>
+				<span class="text-slate-300">Następny</span>
+			</div>
+			<div class="flex items-center gap-1.5">
+				<span class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-amber-400 inline-block"></span>
+				<span class="text-slate-400">Przystanek</span>
+			</div>
+			<div class="flex items-center gap-1.5">
+				<span class="w-2 h-2 rounded-full bg-slate-700 inline-block"></span>
+				<span class="text-slate-500">Odjechany</span>
+			</div>
+		</div>
 	</div>
 
 	<!-- Notka informacyjna -->
-	<div class="flex items-start gap-2 text-[11px] text-slate-500 pt-1">
-		<Info class="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+	<div class="text-[11px] text-slate-500 flex items-start gap-2 pt-1">
+		<Info class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
 		<span>
 			Lokalizacja autobusu jest estymowana na podstawie rozkładu jazdy oraz bieżących opóźnień telemetrycznych systemu TRISTAR. Kliknij na ikonę autobusu lub przystanku na mapie, aby sprawdzić szczegóły.
 		</span>
@@ -673,25 +673,32 @@
 </div>
 
 <style>
+	:global(.custom-route-stop-marker),
+	:global(.custom-route-bus-marker) {
+		background: transparent;
+		border: none;
+	}
+
 	:global(.route-map-popup .leaflet-popup-content-wrapper) {
-		background: #090d16 !important;
+		background: #0f172a !important;
 		color: #f8fafc !important;
+		border-radius: 14px !important;
 		border: 1px solid #334155 !important;
-		border-radius: 16px !important;
-		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
+		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7) !important;
 		padding: 4px !important;
 	}
 
 	:global(.route-map-popup .leaflet-popup-tip) {
-		background: #090d16 !important;
+		background: #0f172a !important;
+		border: 1px solid #334155 !important;
 	}
 
 	:global(.route-map-popup a.leaflet-popup-close-button) {
 		color: #94a3b8 !important;
-		padding: 6px 8px 0 0 !important;
+		padding: 8px !important;
 	}
 
 	:global(.route-map-popup a.leaflet-popup-close-button:hover) {
-		color: #ffffff !important;
+		color: #f8fafc !important;
 	}
 </style>

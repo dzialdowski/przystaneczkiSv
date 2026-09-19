@@ -20,11 +20,92 @@
 	} from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import RouteMap from '$lib/components/RouteMap.svelte';
+	import { getWarsawTime, diffMinutes } from '$lib/time';
+
+	interface RouteStop {
+		stopId: number;
+		stopName: string;
+		stopSequence: number;
+		lat?: number;
+		lon?: number;
+		zone?: string;
+		theoreticalTime: string;
+		estimatedTime: string;
+		status: 'passed' | 'next' | 'upcoming';
+		isNext: boolean;
+		isPassed: boolean;
+		diffMin: number;
+		estMinutes?: number;
+		theoMinutes?: number;
+	}
 
 	let data = $derived(page.data);
 	let user = $derived(page.data.user);
 	let legacyMode = $derived(page.data.legacyMode || false);
 	let isAdmin = $derived(page.data.isAdmin || false);
+
+	// Dynamiczny zegar kroczący od czasu serwera
+	let elapsedMs = $state(0);
+	$effect(() => {
+		const start = performance.now();
+		const timer = setInterval(() => {
+			elapsedMs = performance.now() - start;
+		}, 3000);
+		return () => clearInterval(timer);
+	});
+
+	let liveNowMinutes = $derived.by(() => {
+		const base = data.serverNowMinutes ?? getWarsawTime().nowMinutes;
+		return base + elapsedMs / 60000;
+	});
+
+	let displayStops = $derived.by(() => {
+		const rawStops = (data.stops || []) as RouteStop[];
+		if (rawStops.length === 0) return [];
+
+		let nextFound = false;
+		const mapped = rawStops.map((stop: RouteStop): RouteStop => {
+			const estMin =
+				typeof stop.estMinutes === 'number' && !isNaN(stop.estMinutes)
+					? stop.estMinutes
+					: (() => {
+							const [h, m] = (stop.estimatedTime || '00:00').split(':').map(Number);
+							return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+						})();
+
+			const diff = diffMinutes(estMin, liveNowMinutes);
+			let isPassed = false;
+			let isNext = false;
+			let status: 'passed' | 'next' | 'upcoming' = 'upcoming';
+
+			if (diff < 0) {
+				isPassed = true;
+				status = 'passed';
+			} else if (!nextFound && diff >= 0) {
+				isNext = true;
+				status = 'next';
+				nextFound = true;
+			} else {
+				status = 'upcoming';
+			}
+
+			return {
+				...stop,
+				diffMin: diff,
+				isPassed,
+				isNext,
+				status
+			};
+		});
+
+		const allPassed = mapped.every((s: RouteStop) => s.isPassed);
+		if (!nextFound && !allPassed && mapped.length > 0) {
+			mapped[0].isNext = true;
+			mapped[0].status = 'next';
+		}
+
+		return mapped;
+	});
 
 	function formatDelay(sec: number) {
 		if (Math.abs(sec) < 60) return { text: 'Punktualnie', type: 'on-time' };
@@ -37,6 +118,9 @@
 			return { text: `Przyspieszony -${m}m`, type: 'early' };
 		}
 	}
+
+	let delayInfo = $derived(formatDelay(data.delaySeconds));
+	let vCode = $derived(data.vehicleCode || (data.vehicleDetails ? String(data.vehicleDetails.bus) : ''));
 
 	// Odfiltrowanie udogodnień, aby nie dublować klimatyzacji i USB pokazywanych jako dedykowane odznaki
 	let otherFeatures = $derived.by(() => {
@@ -59,213 +143,190 @@
 	<main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
 		<div class="flex items-center justify-between gap-3">
 			<a
-				href="/"
+				href={data.stops[0]?.stopId ? `/przystanek/${data.stops[0].stopId}` : '/'}
 				onclick={(e) => {
 					if (typeof window !== 'undefined' && window.history.length > 1) {
 						e.preventDefault();
 						window.history.back();
 					}
 				}}
-				class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition hover:border-slate-700"
+				class="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-white transition group py-2"
 			>
-				<ArrowLeft class="w-4 h-4" />
-				Powrót do odjazdów
+				<ArrowLeft class="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+				<span>Powrót do odjazdów</span>
 			</a>
 
-			{#if data.delaySeconds !== undefined}
-				{@const delayInfo = formatDelay(data.delaySeconds)}
-				<div class="flex items-center gap-2 flex-wrap justify-end">
-					<span
-						class="text-xs font-bold px-3 py-1 rounded-full border {delayInfo.type === 'on-time'
-							? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-							: delayInfo.type === 'delayed'
-								? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-								: 'bg-sky-500/10 text-sky-400 border-sky-500/30'}"
-					>
-						{delayInfo.text}
-					</span>
-					{#if data.vehicleCode || data.vehicleDetails?.bus}
-						{@const vCode = data.vehicleCode || data.vehicleDetails?.bus}
-						<a
-							href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={vCode}&typ=&brand_id=&model_id=&carrier_id="
-							target="_blank"
-							rel="noreferrer"
-							class="text-xs font-mono-board font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition border border-slate-700 inline-flex items-center gap-1.5"
-						>
-							<span>Pojazd #{vCode}</span>
-							{#if data.vehicleDetails?.marka}
-								<span class="text-slate-400 font-normal">({data.vehicleDetails.marka} {data.vehicleDetails.model || ''})</span>
-							{/if}
-							{#if data.vehicleDetails?.klima}
-								<span title="Klimatyzacja">❄️</span>
-							{/if}
-							{#if data.vehicleDetails?.usb}
-								<span title="Ładowarki USB">⚡</span>
-							{/if}
-						</a>
-					{/if}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Nagłówek trasy -->
-		<div class="bg-slate-900/70 rounded-3xl p-6 border border-slate-800/90 shadow-xl flex items-center gap-5 backdrop-blur-sm">
-			<div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
-				{data.lineName}
-			</div>
-			<div class="min-w-0">
-				<div class="flex items-center gap-2 text-xs font-mono-board text-amber-400 mb-0.5">
-					<span>Kurs #{data.trip || data.tripId}</span>
-					{#if data.stops.length > 0}
-						<span class="text-slate-500">•</span>
-						<span class="text-slate-400">{data.stops.length} przystanków</span>
-					{/if}
-				</div>
-				<h1 class="text-xl sm:text-2xl font-black text-white truncate">{data.routeDescription || `Trasa linii ${data.lineName}`}</h1>
-				<p class="text-xs text-slate-400 mt-0.5">Lista przystanków, estymowane i rozkładowe czasy przyjazdu</p>
+			<div class="text-xs text-slate-500 font-mono-board">
+				ID Trasy: {data.routeId} • Kurs: {data.tripId}
 			</div>
 		</div>
 
-		<!-- Karta Informacji o Pojeździe -->
-		{#if data.vehicleCode || data.vehicleDetails}
-			{@const vCode = data.vehicleCode || data.vehicleDetails?.bus}
-			<div class="bg-slate-900/70 rounded-3xl p-5 sm:p-6 border border-slate-800/90 shadow-xl backdrop-blur-sm space-y-4">
-				<!-- Pasek nagłówka sekcji pojazdu -->
-				<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-					<div class="flex items-center gap-2.5">
-						<div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+		<!-- Karta nagłówkowa linii -->
+		<div class="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl relative overflow-hidden">
+			<div class="absolute -right-8 -top-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+				<div class="space-y-3">
+					<div class="flex items-center gap-3">
+						<span class="px-3.5 py-1.5 rounded-2xl bg-amber-500 text-slate-950 font-black text-2xl sm:text-3xl font-mono-board shadow-lg shadow-amber-500/20">
+							{data.lineName}
+						</span>
+						{#if data.vehicleCode}
+							<div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/80 text-amber-400 text-xs font-mono font-bold">
+								<Bus class="w-3.5 h-3.5" />
+								<span>Pojazd #{data.vehicleCode}</span>
+							</div>
+						{/if}
+					</div>
+
+					<h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+						{data.routeDescription}
+					</h1>
+
+					<div class="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+						<span class="flex items-center gap-1.5">
+							<MapPin class="w-3.5 h-3.5 text-amber-400" />
+							{displayStops.length} przystanków na trasie
+						</span>
+						{#if data.stops.length > 0}
+							<span class="flex items-center gap-1.5">
+								<Clock class="w-3.5 h-3.5 text-amber-400" />
+								{displayStops[0]?.theoreticalTime} ➔ {displayStops[displayStops.length - 1]?.estimatedTime}
+							</span>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Status punktualności -->
+				<div class="shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-4 sm:pt-0 sm:pl-6 gap-2">
+					<span class="text-xs text-slate-400 font-medium">Status kursu:</span>
+					<div class="flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-bold {
+						delayInfo.type === 'on-time'
+							? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+							: delayInfo.type === 'early'
+								? 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+								: 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+					}">
+						{#if delayInfo.type === 'on-time'}
+							<CheckCircle2 class="w-4 h-4" />
+						{:else}
+							<AlertCircle class="w-4 h-4" />
+						{/if}
+						<span>{delayInfo.text}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Informacje o pojeździe (jeśli znaleziono w bazie 'busy') -->
+		{#if vCode}
+			<div class="bg-slate-900/40 rounded-3xl p-6 border border-slate-800/80 shadow-lg space-y-4">
+				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+					<div class="flex items-center gap-3">
+						<div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
 							<Bus class="w-5 h-5" />
 						</div>
 						<div>
 							<div class="flex items-center gap-2">
-								<h2 class="text-sm sm:base font-bold text-white">Pojazd obsługujący ten kurs</h2>
+								<h2 class="text-sm sm:text-base font-bold text-white">Pojazd obsługujący ten kurs</h2>
 								<span class="text-xs font-mono-board font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 shadow-sm">
 									#{vCode}
 								</span>
 							</div>
-							<p class="text-[11px] text-slate-400">Dane taborowe ZKM Gdynia & telemetryczne TRISTAR</p>
+							<p class="text-xs text-slate-400 mt-0.5">
+								{#if data.vehicleDetails?.marka}
+									{data.vehicleDetails.marka} {data.vehicleDetails.model || ''}
+								{:else}
+									Szczegóły techniczne taboru ZKM Gdynia
+								{/if}
+							</p>
 						</div>
 					</div>
 
 					<a
 						href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={vCode}&typ=&brand_id=&model_id=&carrier_id="
 						target="_blank"
-						rel="noreferrer"
-						class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition self-start sm:self-auto"
 					>
-						<span>Karta pojazdu w ZKM</span>
-						<ExternalLink class="w-3.5 h-3.5" />
+						<span>Metryka ZKM</span>
+						<ExternalLink class="w-3.5 h-3.5 text-slate-400" />
 					</a>
 				</div>
 
-				<!-- Zawartość: Zdjęcie + Parametry i Udogodnienia -->
-				<div class="flex flex-col sm:flex-row gap-5 items-start">
+				<div class="flex flex-col sm:flex-row gap-6 items-start">
 					{#if data.vehicleDetails?.photoURL}
-						<div class="w-full sm:w-60 md:w-72 h-44 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative group shadow-inner">
+						<div class="w-full sm:w-48 h-32 rounded-2xl overflow-hidden border border-slate-700/80 shrink-0 bg-slate-950 relative group">
 							<img
 								src={data.vehicleDetails.photoURL}
 								alt="Pojazd #{vCode}"
 								class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
 								loading="lazy"
 							/>
-							<div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono-board font-bold text-amber-400 shadow">
-								#{vCode}
-							</div>
-						</div>
-					{:else}
-						<div class="w-full sm:w-44 h-36 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col items-center justify-center p-4 text-center shrink-0">
-							<div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-2">
-								<Bus class="w-6 h-6" />
-							</div>
-							<span class="text-xs font-mono-board font-bold text-slate-200">
-								#{vCode}
-							</span>
-							<span class="text-[10px] text-slate-500 mt-0.5">Brak zdjęcia</span>
 						</div>
 					{/if}
 
-					<!-- Dane techniczne i wyposażenie -->
-					<div class="min-w-0 flex-1 space-y-3.5">
-						<div>
-							{#if data.vehicleDetails?.marka}
-								<h3 class="text-lg sm:text-xl font-black text-white tracking-tight">
-									{data.vehicleDetails.marka} {data.vehicleDetails.model || ''}
-								</h3>
-							{:else}
-								<h3 class="text-lg sm:text-xl font-black text-white tracking-tight">
-									Pojazd #{vCode}
-								</h3>
+					<div class="flex-1 space-y-3 w-full">
+						<!-- Odznaki udogodnień: klimatyzacja, USB, niska podłoga itp. -->
+						<div class="flex flex-wrap items-center gap-2">
+							{#if data.vehicleDetails?.klima}
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+									<Wind class="w-3.5 h-3.5" />
+									Klimatyzacja
+								</span>
 							{/if}
-							<div class="flex items-center gap-2 text-xs font-mono-board text-slate-400 mt-0.5">
-								<span>Numer taborowy: <strong class="text-amber-400">#{vCode}</strong></span>
-								<span class="text-slate-600">•</span>
-								<span>Ewidencja ZKM Gdynia</span>
-							</div>
-						</div>
 
-						<!-- Główne udogodnienia (Klima, USB) i cechy taboru -->
-						<div class="space-y-2">
-							<div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-								Wyposażenie i udogodnienia:
-							</div>
-							<div class="flex flex-wrap gap-2">
-								{#if data.vehicleDetails?.klima}
-									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 text-xs font-semibold shadow-sm shadow-cyan-500/10">
-										<Wind class="w-3.5 h-3.5 text-cyan-400" />
-										<span>Klimatyzacja</span>
-									</span>
-								{/if}
-								{#if data.vehicleDetails?.usb}
-									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 text-xs font-semibold shadow-sm shadow-emerald-500/10">
-										<Zap class="w-3.5 h-3.5 text-emerald-400" />
-										<span>Ładowarki USB</span>
-									</span>
-								{/if}
+							{#if data.vehicleDetails?.usb}
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+									<Zap class="w-3.5 h-3.5" />
+									Ładowarki USB
+								</span>
+							{/if}
 
-								{#each otherFeatures as feat (feat)}
-									{@const lower = feat.toLowerCase()}
-									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 text-slate-300 border border-slate-700/80 text-xs font-medium">
-										{#if lower.includes('rampa') || lower.includes('wózk')}
-											<Accessibility class="w-3.5 h-3.5 text-indigo-400" />
-										{:else if lower.includes('przyklęk') || lower.includes('niska')}
-											<Accessibility class="w-3.5 h-3.5 text-violet-400" />
-										{:else if lower.includes('monitoring')}
-											<ShieldCheck class="w-3.5 h-3.5 text-slate-400" />
-										{:else if lower.includes('zapowia') || lower.includes('głosow')}
-											<Volume2 class="w-3.5 h-3.5 text-amber-400" />
-										{:else if lower.includes('monitor') || lower.includes('ekran')}
-											<Tv class="w-3.5 h-3.5 text-sky-400" />
-										{:else if lower.includes('biletomat')}
-											<Ticket class="w-3.5 h-3.5 text-emerald-400" />
-										{:else if lower.includes('aed') || lower.includes('defibryl')}
-											<Heart class="w-3.5 h-3.5 text-rose-400" />
-										{:else}
-											<CheckCircle2 class="w-3.5 h-3.5 text-slate-400" />
-										{/if}
-										<span>{feat}</span>
+							{#if otherFeatures.length > 0}
+								{#each otherFeatures as feat}
+									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+										<ShieldCheck class="w-3.5 h-3.5 text-slate-400" />
+										{feat}
 									</span>
 								{/each}
+							{/if}
 
-								{#if !data.vehicleDetails?.klima && !data.vehicleDetails?.usb && otherFeatures.length === 0}
-									<span class="text-xs text-slate-500 italic">
-										Brak szczegółowego wykazu wyposażenia dla tego pojazdu.
+							{#if !data.vehicleDetails}
+								<span class="text-xs text-slate-500 italic">
+									Brak dalszych parametrów technicznych w lokalnej bazie taboru.
+								</span>
+							{/if}
+						</div>
+
+						<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
+							<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+								<span class="text-slate-500 block text-[10px]">Numer boczny</span>
+								<span class="font-bold text-white font-mono-board text-sm">#{vCode}</span>
+							</div>
+
+							{#if data.vehicleDetails?.marka}
+								<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+									<span class="text-slate-500 block text-[10px]">Marka i Model</span>
+									<span class="font-bold text-white truncate block">
+										{data.vehicleDetails.marka} {data.vehicleDetails.model || ''}
 									</span>
-								{/if}
+								</div>
+							{/if}
+
+							<div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+								<span class="text-slate-500 block text-[10px]">Opóźnienie na trasie</span>
+								<span class="font-bold font-mono-board {
+									delayInfo.type === 'on-time'
+										? 'text-emerald-400'
+										: delayInfo.type === 'early'
+											? 'text-sky-400'
+											: 'text-rose-400'
+								}">
+									{delayInfo.text}
+								</span>
 							</div>
 						</div>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<!-- Brak przypisanego pojazdu -->
-			<div class="bg-slate-900/40 rounded-3xl p-5 border border-slate-800/80 shadow-lg flex items-center gap-4 text-slate-400">
-				<div class="w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0 text-slate-400">
-					<Info class="w-5 h-5 text-slate-400" />
-				</div>
-				<div class="text-xs">
-					<div class="font-bold text-slate-300">Pojazd według rozkładu (brak danych TRISTAR)</div>
-					<div class="text-slate-400 mt-0.5">
-						Ten kurs realizowany jest zgodnie z rozkładem jazdy. Numer boczny pojazdu oraz udogodnienia pojawią się na żywo, gdy pojazd zaloguje się do systemu TRISTAR.
 					</div>
 				</div>
 			</div>
@@ -273,13 +334,13 @@
 
 		<!-- Sekwencja przystanków (oś czasu / timeline) -->
 		<div class="bg-slate-900/40 rounded-3xl p-6 border border-slate-800/80 shadow-lg">
-			{#if data.stops.length === 0}
+			{#if displayStops.length === 0}
 				<div class="text-center py-12 text-slate-400 text-sm">
 					Brak szczegółowych danych sekwencji przystanków dla tego wariantu trasy.
 				</div>
 			{:else}
 				<div class="relative border-l-2 border-slate-800 ml-4 sm:ml-6 pl-6 sm:pl-8 space-y-5 py-2">
-					{#each data.stops as stop, idx (stop.stopId || idx)}
+					{#each displayStops as stop, idx (stop.stopId || idx)}
 						<div class="relative group">
 							<!-- Kropka na osi czasu -->
 							{#if stop.isNext}
@@ -368,7 +429,7 @@
 
 		<!-- Mapa trasy z przystankami i szacowaną pozycją autobusu na żywo -->
 		<RouteMap
-			stops={data.stops}
+			stops={displayStops}
 			lineName={data.lineName}
 			routeDescription={data.routeDescription}
 			vehicleCode={data.vehicleCode}
