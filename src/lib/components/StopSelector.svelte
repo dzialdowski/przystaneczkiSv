@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Search, Star, Bus, MapPin, X } from 'lucide-svelte';
+	import { Search, Star, Bus, MapPin, X, Sparkles } from 'lucide-svelte';
 	import type { FavoriteStop } from '$lib/server/db';
 	import type { TristarStop } from '$lib/server/tristar';
+	import { DEMO_STOPS } from '$lib/demoStops';
 
 	interface Props {
 		selectedStopId: string;
@@ -15,45 +16,6 @@
 	let searchResults = $state<TristarStop[]>([]);
 	let isSearching = $state(false);
 	let searchTimeout: any;
-
-	// Domyślne przystanki z oryginalnego index.php
-	const DEFAULT_GROUPS = [
-		{
-			name: 'Vanco',
-			stops: [
-				{ id: '37200', name: 'Cisowa SKM 06 ➔ Centrum' },
-				{ id: '37540', name: 'Jęczmienna 02 ➔ Centrum' },
-				{ id: '37350', name: 'Owsiana 01 ➔ Centrum' },
-				{ id: '37700', name: 'Chylonia Dworzec PKP ➔ Cisowa' },
-				{ id: '37380', name: 'Chylonia Centrum ➔ Centrum' },
-				{ id: '37320', name: 'Owsiana ➔ Rumia' },
-				{ id: '38460', name: 'Handlowa 02 (NŻ) ➔ Rumia' },
-				{ id: '31329', name: 'Janowo SKM - Sobieskiego ➔ Cisowa' }
-			]
-		},
-		{
-			name: 'Brzoza',
-			stops: [
-				{ id: '39380', name: 'Stocznia Marynarki Woj. 01 ➔ Estakada' },
-				{ id: '39070', name: 'Stocznia Marynarki Woj. 01 ➔ AMW' },
-				{ id: '39040', name: 'Obłuże Centrum ➔ Brzozen' },
-				{ id: '36140', name: 'Gdynia Dw. Główny PKP - Hala ➔ Brzozen' },
-				{ id: '39320', name: 'Alzacka ➔ Brzozen' }
-			]
-		},
-		{
-			name: 'Diana & Centrum',
-			stops: [
-				{ id: '38100', name: 'Wiklinowa ➔ Centrum' },
-				{ id: '35113', name: 'Wzg. św. Maksymiliana SKM 03 ➔ Cisowa' },
-				{ id: '35111', name: 'Wzg. św. Maksymiliana SKM 01 ➔ Oksywie' },
-				{ id: '36050', name: 'Armii Krajowej ➔ Domki' },
-				{ id: '37070', name: 'Mireckiego 02 ➔ Cisowa' },
-				{ id: '39370', name: 'Akademia Marynarki Wojennej' },
-				{ id: '39360', name: 'Oksywie Dolne' }
-			]
-		}
-	];
 
 	function handleSearchInput(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -96,7 +58,7 @@
 			type="text"
 			value={searchQuery}
 			oninput={handleSearchInput}
-			placeholder="Wpisz nazwę przystanku lub numer (np. Dworzec Główny, Cisowa)..."
+			placeholder="Wpisz nazwę przystanku lub numer (np. Dworzec Główny, Wzgórze, Obłuże)..."
 			class="w-full pl-10 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-lg"
 		/>
 		{#if searchQuery}
@@ -140,16 +102,18 @@
 		{/if}
 	</div>
 
-	<!-- Lista wyboru (select) oraz szybkie pigułki ulubionych -->
+	<!-- Lista wyboru (select) oraz szybkie pigułki ulubionych/demo -->
 	<div class="flex flex-col gap-2">
 		<div class="relative">
 			<select
 				value={selectedStopId}
 				onchange={(e) => {
 					const sel = e.target as HTMLSelectElement;
-					const opt = sel.options[sel.selectedIndex];
 					if (sel.value) {
-						onSelect(sel.value, opt.text);
+						const fav = favorites?.find((f) => String(f.stop_id).trim() === sel.value);
+						const demo = DEMO_STOPS.find((s) => s.id === sel.value);
+						const stopName = fav ? fav.stop_name : (demo ? demo.name : sel.options[sel.selectedIndex].text);
+						onSelect(sel.value, stopName);
 					}
 				}}
 				class="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-amber-500 transition appearance-none cursor-pointer"
@@ -164,20 +128,18 @@
 					</optgroup>
 				{/if}
 
-				{#each DEFAULT_GROUPS as group}
-					<optgroup label="📍 {group.name}">
-						{#each group.stops as s}
-							<option value={s.id}>{s.name}</option>
-						{/each}
-					</optgroup>
-				{/each}
+				<optgroup label="📍 Główne węzły i przystanki (Top 20 Demo)">
+					{#each DEMO_STOPS as s}
+						<option value={s.id}>📍 {s.name} ({s.region})</option>
+					{/each}
+				</optgroup>
 			</select>
 			<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
 				▼
 			</div>
 		</div>
 
-		<!-- Pigułki szybkiego wyboru dla ulubionych -->
+		<!-- Pigułki szybkiego wyboru: ulubione dla zalogowanych LUB kluczowe węzły dla niezalogowanych -->
 		{#if favorites && favorites.length > 0}
 			<div class="flex items-center gap-1.5 overflow-x-auto py-1 text-xs no-scrollbar">
 				<span class="text-[11px] font-semibold text-amber-400 shrink-0 flex items-center gap-1">
@@ -189,6 +151,20 @@
 						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] {selectedStopId === fav.stop_id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
 					>
 						{fav.stop_name}
+					</button>
+				{/each}
+			</div>
+		{:else}
+			<div class="flex items-center gap-1.5 overflow-x-auto py-1 text-xs no-scrollbar">
+				<span class="text-[11px] font-semibold text-amber-400 shrink-0 flex items-center gap-1">
+					<Sparkles class="w-3 h-3 text-amber-400" /> Top węzły:
+				</span>
+				{#each DEMO_STOPS.slice(0, 8) as s}
+					<button
+						onclick={() => onSelect(s.id, s.name)}
+						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] {selectedStopId === s.id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
+					>
+						{s.name.replace(/\s+\d+.*$/, '')}
 					</button>
 				{/each}
 			</div>

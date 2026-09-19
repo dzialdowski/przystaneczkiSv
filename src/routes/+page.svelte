@@ -9,6 +9,7 @@
 	import MessageTicker from '$lib/components/MessageTicker.svelte';
 	import type { DelaysResponse } from '$lib/server/tristar';
 	import type { FavoriteStop } from '$lib/server/db';
+	import { DEMO_STOPS } from '$lib/demoStops';
 
 	interface PageSnapshot {
 		selectedStopId: string;
@@ -28,11 +29,11 @@
 		legacyMode = data.legacyMode || false;
 	});
 
-	// Domyślny przystanek (Cisowa SKM 06 - 37200 jak w oryginalnym projekcie)
-	let selectedStopId = $state('37200');
-	let currentStopName = $state('Cisowa SKM 06');
+	// Domyślny przystanek bez zalogowania (#1 z wyselekcjonowanego Top 20)
+	let selectedStopId = $state(DEMO_STOPS[0].id);
+	let currentStopName = $state(DEMO_STOPS[0].name);
 	let delaysData = $state<DelaysResponse>({
-		stopId: '37200',
+		stopId: DEMO_STOPS[0].id,
 		lastUpdate: '',
 		delays: []
 	});
@@ -82,7 +83,7 @@
 
 	function handleSelectStop(id: string, name: string) {
 		selectedStopId = String(id);
-		currentStopName = name.replace(/^[⭐📍]\s*/, '');
+		currentStopName = name.replace(/^[⭐📍]\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
 		loadDelays(selectedStopId);
 	}
 
@@ -263,10 +264,10 @@
 					<Sparkles class="w-5 h-5" />
 				</div>
 				<div>
-					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">
-						Widok: {legacyMode ? 'Retro (PHP 2016)' : 'Nowoczesny TRISTAR'}
-					</h3>
-					<p class="text-[11px] text-slate-400">Kliknij, aby przełączyć styl wyświetlacza</p>
+					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Tryb stylizacji tablicy</h3>
+					<p class="text-[11px] text-slate-400">
+						Aktualnie: <span class="font-bold text-amber-400">{legacyMode ? 'Klasyczny żółty LED (Bursztyn)' : 'Nowoczesny neonowy (Cyberpunk)'}</span>
+					</p>
 				</div>
 			</button>
 		</div>
