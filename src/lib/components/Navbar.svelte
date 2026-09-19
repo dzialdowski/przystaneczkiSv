@@ -1,6 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Bus, MapPin, Star, Settings, Shield, LogOut, User, Sparkles, RefreshCw, KeyRound } from 'lucide-svelte';
+	import {
+		Bus,
+		MapPin,
+		Star,
+		Settings,
+		Shield,
+		LogOut,
+		User,
+		Sparkles,
+		RefreshCw,
+		KeyRound,
+		Download
+	} from 'lucide-svelte';
+	import { pwa } from '$lib/pwa.svelte';
 	import TelegramLoginWidget from './TelegramLoginWidget.svelte';
 
 	interface Props {
@@ -97,6 +110,17 @@
 
 		<!-- Narzędzia prawej strony -->
 		<div class="flex items-center gap-2">
+			{#if pwa.canInstall}
+				<button
+					onclick={() => pwa.install()}
+					title="Zainstaluj aplikację na urządzeniu"
+					class="px-2.5 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+				>
+					<Download class="w-3.5 h-3.5" />
+					<span class="hidden sm:inline">Zainstaluj</span>
+				</button>
+			{/if}
+
 			{#if onRefresh}
 				<button
 					onclick={onRefresh}
@@ -147,6 +171,18 @@
 							</div>
 
 							<div class="space-y-1">
+								{#if pwa.canInstall}
+									<button
+										onclick={() => {
+											showUserModal = false;
+											pwa.install();
+										}}
+										class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-amber-400 font-semibold transition text-left"
+									>
+										<Download class="w-3.5 h-3.5" />
+										Zainstaluj aplikację
+									</button>
+								{/if}
 								<a
 									href="/moje"
 									onclick={() => showUserModal = false}

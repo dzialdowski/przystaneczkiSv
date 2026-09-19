@@ -2,11 +2,24 @@
 <html lang="pl" class="dark">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="theme-color" content="#0a0f1d" />
 		<meta name="description" content="Przystaneczki ZKM Gdynia - odjazdy autobusów i trolejbusów w czasie rzeczywistym z systemu TRISTAR" />
+		
+		<!-- PWA Manifest & App configuration -->
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<meta name="application-name" content="Przystaneczki" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Przystaneczki" />
+		<meta name="format-detection" content="telephone=no" />
+
+		<!-- Icons -->
 		<link rel="icon" type="image/png" href="/nice-highres.png" />
-		<link rel="apple-touch-icon" href="/nice-higherres.png" />
+		<link rel="apple-touch-icon" sizes="192x192" href="/nice-highres.png" />
+		<link rel="apple-touch-icon" sizes="512x512" href="/nice-higherres.png" />
+
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -18,4 +31,3 @@
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
-

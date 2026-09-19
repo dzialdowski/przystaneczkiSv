@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => {
 		}
 	}
 
+	const buildVersion =
+		process.env.APP_VERSION ||
+		process.env.PUBLIC_APP_VERSION ||
+		(mode === 'development' ? 'dev' : `1.0.${Date.now()}`);
+	process.env.PUBLIC_APP_VERSION = buildVersion;
+	process.env.APP_VERSION = buildVersion;
+
 	return {
 		plugins: [
 			tailwindcss(),
@@ -23,7 +30,11 @@ export default defineConfig(({ mode }) => {
 					runes: ({ filename }) =>
 						filename.split(/[/\\\\]/).includes('node_modules') ? undefined : true
 				},
-				adapter: adapter()
+				adapter: adapter(),
+				version: {
+					pollInterval: 120_000,
+					name: buildVersion
+				}
 			})
 		],
 		server: {

@@ -1,0 +1,39 @@
+{
+  "name": "Przystaneczki ZKM Gdynia",
+  "short_name": "Przystaneczki",
+  "description": "Odjazdy autobusów i trolejbusów w czasie rzeczywistym z systemu TRISTAR ZKM Gdynia",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#020617",
+  "theme_color": "#0a0f1d",
+  "lang": "pl",
+  "categories": ["transport", "travel", "utilities"],
+  "icons": [
+    {
+      "src": "/nice-highres.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nice-higherres.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nice-highres.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/nice-higherres.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
