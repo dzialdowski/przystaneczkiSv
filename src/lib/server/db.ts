@@ -67,19 +67,26 @@ function getSqlConfig(): sql.config {
 }
 
 let poolPromise: Promise<sql.ConnectionPool> | null = null;
+let dbWarnedOnce = false;
 
 export async function getDbPool(): Promise<sql.ConnectionPool> {
 	if (!poolPromise) {
 		const config = getSqlConfig();
 		if (!config.server || !config.database) {
 			const errMsg = 'Brak wymaganych zmiennych środowiskowych bazy danych MSSQL (MSSQL_SERVER, MSSQL_DATABASE). Ustaw je w pliku .env.';
-			console.error(errMsg);
+			if (!dbWarnedOnce) {
+				console.warn(errMsg);
+				dbWarnedOnce = true;
+			}
 			throw new Error(errMsg);
 		}
 
 		poolPromise = sql.connect(config).catch((err) => {
 			poolPromise = null;
-			console.error('Błąd połączenia z bazą MSSQL:', err);
+			if (!dbWarnedOnce) {
+				console.warn('Błąd połączenia z bazą MSSQL:', err);
+				dbWarnedOnce = true;
+			}
 			throw err;
 		});
 	}
@@ -449,62 +456,97 @@ export async function getRouteStops(
 			}
 		}
 
-		const pool = await getDbPool();
-		const targetId = shapeId || tripId;
+		let pool: sql.ConnectionPool | null = null;
+		try {
+			pool = await getDbPool();
+		} catch {
+			pool = null;
+		}
 
-		const result = await pool
-			.request()
-			.input('targetId', sql.Int, targetId)
-			.query(`
-				SELECT 
-					t.stop_id AS stopID, 
-					t.stop_sequence AS stopSequence,
-					COALESCE(p.nazwaPrzystanku, 'Słupek ' + CAST(t.stop_id AS NVARCHAR(20))) AS nazwaPrzystanku,
-					p.Latitude,
-					p.Longitude,
-					p.zoneName
-				FROM [dbo].[trasy] t
-				LEFT JOIN [dbo].[przystanki] p ON t.stop_id = p.idPrzystanku
-				WHERE t.trip_id = @targetId
-				ORDER BY t.stop_sequence
-			`);
+		if (pool) {
+			try {
+				const targetId = shapeId || tripId;
+				const result = await pool
+					.request()
+					.input('targetId', sql.Int, targetId)
+					.query(`
+						SELECT 
+							t.stop_id AS stopID, 
+							t.stop_sequence AS stopSequence,
+							COALESCE(p.nazwaPrzystanku, 'Słupek ' + CAST(t.stop_id AS NVARCHAR(20))) AS nazwaPrzystanku,
+							p.Latitude,
+							p.Longitude,
+							p.zoneName
+						FROM [dbo].[trasy] t
+						LEFT JOIN [dbo].[przystanki] p ON t.stop_id = p.idPrzystanku
+						WHERE t.trip_id = @targetId
+						ORDER BY t.stop_sequence
+					`);
 
-		// Jeśli w bazie nic nie ma, sprawdź bufor GTFS (shapePatterns)
-		if (result.recordset.length === 0 && shapeId) {
+				if (result.recordset.length > 0) {
+					return result.recordset.map((row) => ({
+						stopId: Number(row.stopID),
+						stopName: String(row.nazwaPrzystanku).trim(),
+						stopSequence: Number(row.stopSequence),
+						lat: row.Latitude ? parseFloat(row.Latitude) : undefined,
+						lon: row.Longitude ? parseFloat(row.Longitude) : undefined,
+						zone: row.zoneName ? String(row.zoneName).trim() : undefined
+					}));
+				}
+			} catch (err) {
+				console.warn('Błąd zapytania DB trasy w getRouteStops:', err);
+			}
+		}
+
+		// Jeśli w bazie nic nie ma lub brak połączenia z bazą, sprawdź bufor GTFS (shapePatterns)
+		if (shapeId) {
 			const gtfs = getGtfsData();
 			const cachedStops = gtfs?.shapePatterns?.[String(shapeId)];
 			if (cachedStops && cachedStops.length > 0) {
 				const stopIds = cachedStops.filter((id): id is number => id !== null);
 				if (stopIds.length > 0) {
-					const stopsRes = await pool.request().query(`
-						SELECT idPrzystanku, nazwaPrzystanku, Latitude, Longitude, zoneName
-						FROM [dbo].[przystanki]
-						WHERE idPrzystanku IN (${stopIds.join(',')})
-					`);
-					const stopsMap = new Map(stopsRes.recordset.map((r) => [r.idPrzystanku, r]));
+					let stopsMap: Map<number, any> | null = null;
+					if (pool) {
+						try {
+							const stopsRes = await pool.request().query(`
+								SELECT idPrzystanku, nazwaPrzystanku, Latitude, Longitude, zoneName
+								FROM [dbo].[przystanki]
+								WHERE idPrzystanku IN (${stopIds.join(',')})
+							`);
+							stopsMap = new Map(stopsRes.recordset.map((r) => [r.idPrzystanku, r]));
+						} catch {
+							stopsMap = null;
+						}
+					}
+
+					let tristarStopsMap: Map<number, any> | null = null;
+					if (!stopsMap || stopsMap.size === 0) {
+						try {
+							const { getAllStops } = await import('./tristar.ts');
+							const allStops = await getAllStops();
+							tristarStopsMap = new Map(allStops.map((s) => [s.stopId, s]));
+						} catch {
+							tristarStopsMap = null;
+						}
+					}
+
 					return stopIds.map((sId, idx) => {
-						const row = stopsMap.get(sId);
+						const row = stopsMap?.get(sId);
+						const tRow = tristarStopsMap?.get(sId);
 						return {
 							stopId: sId,
-							stopName: row?.nazwaPrzystanku?.trim() || `Słupek ${sId}`,
+							stopName: row?.nazwaPrzystanku?.trim() || tRow?.stopName?.trim() || `Słupek ${sId}`,
 							stopSequence: idx,
-							lat: row?.Latitude ? parseFloat(row.Latitude) : undefined,
-							lon: row?.Longitude ? parseFloat(row.Longitude) : undefined,
-							zone: row?.zoneName?.trim() || undefined
+							lat: row?.Latitude ? parseFloat(row.Latitude) : tRow?.stopLat,
+							lon: row?.Longitude ? parseFloat(row.Longitude) : tRow?.stopLon,
+							zone: row?.zoneName?.trim() || tRow?.zoneId?.trim() || undefined
 						};
 					});
 				}
 			}
 		}
 
-		return result.recordset.map((row) => ({
-			stopId: Number(row.stopID),
-			stopName: String(row.nazwaPrzystanku).trim(),
-			stopSequence: Number(row.stopSequence),
-			lat: row.Latitude ? parseFloat(row.Latitude) : undefined,
-			lon: row.Longitude ? parseFloat(row.Longitude) : undefined,
-			zone: row.zoneName ? String(row.zoneName).trim() : undefined
-		}));
+		return [];
 	} catch (error) {
 		console.error('Błąd getRouteStops:', error);
 		return [];
