@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { getRouteStops, getRouteNameFromDb, getBusDetails, type BusDetails } from '$lib/server/db';
-import { getStopDelays, getRoutesMap } from '$lib/server/tristar';
+import { getStopDelays, getRoutesMap, getAllStops } from '$lib/server/tristar';
 import { getShapeIdForTrip, getShapeOffsets, getTripStartTime, resolveShapeId } from '$lib/server/gtfs';
 
 function formatHHMM(min: number): string {
@@ -62,6 +62,26 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		headsign: headsignParam,
 		fromStop
 	});
+
+	// 4b. Uzupełnij ewentualne brakujące współrzędne z rejestru przystanków TRISTAR
+	const missingCoords = routeStops.some((s) => typeof s.lat !== 'number' || typeof s.lon !== 'number');
+	if (missingCoords) {
+		try {
+			const allStops = await getAllStops();
+			const stopsMap = new Map(allStops.map((s) => [s.stopId, s]));
+			for (const s of routeStops) {
+				if (typeof s.lat !== 'number' || typeof s.lon !== 'number') {
+					const found = stopsMap.get(s.stopId);
+					if (found && found.stopLat && found.stopLon) {
+						s.lat = found.stopLat;
+						s.lon = found.stopLon;
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('Błąd pobierania współrzędnych przystanków:', err);
+		}
+	}
 
 	// 5. Jeśli nadal nie mamy vehicleCode, sprawdź początkowe przystanki trasy w TRISTAR
 	if (!vehicleCode && routeStops.length > 0) {
@@ -196,6 +216,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			...s,
 			theoreticalTime,
 			estimatedTime,
+			theoMinutes: sTheoMin,
+			estMinutes: sEstMin,
 			status,
 			isNext,
 			isPassed,
@@ -219,6 +241,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		vehicleCode,
 		vehicleDetails,
 		delaySeconds: delaySec,
+		serverNowMinutes: nowMinutes,
+		serverTimestamp: now.getTime(),
 		stops: stopsWithTimes
 	};
 };

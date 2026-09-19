@@ -19,6 +19,7 @@
 		Info
 	} from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
+	import RouteMap from '$lib/components/RouteMap.svelte';
 
 	let data = $derived(page.data);
 	let user = $derived(page.data.user);
@@ -137,7 +138,7 @@
 						</div>
 						<div>
 							<div class="flex items-center gap-2">
-								<h2 class="text-sm sm:text-base font-bold text-white">Pojazd obsługujący ten kurs</h2>
+								<h2 class="text-sm sm:base font-bold text-white">Pojazd obsługujący ten kurs</h2>
 								<span class="text-xs font-mono-board font-black px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 shadow-sm">
 									#{vCode}
 								</span>
@@ -278,7 +279,7 @@
 				</div>
 			{:else}
 				<div class="relative border-l-2 border-slate-800 ml-4 sm:ml-6 pl-6 sm:pl-8 space-y-5 py-2">
-					{#each data.stops as stop, idx}
+					{#each data.stops as stop, idx (stop.stopId || idx)}
 						<div class="relative group">
 							<!-- Kropka na osi czasu -->
 							{#if stop.isNext}
@@ -364,5 +365,17 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- Mapa trasy z przystankami i szacowaną pozycją autobusu na żywo -->
+		<RouteMap
+			stops={data.stops}
+			lineName={data.lineName}
+			routeDescription={data.routeDescription}
+			vehicleCode={data.vehicleCode}
+			vehicleDetails={data.vehicleDetails}
+			delaySeconds={data.delaySeconds}
+			serverNowMinutes={data.serverNowMinutes}
+			serverTimestamp={data.serverTimestamp}
+		/>
 	</main>
 </div>
