@@ -1,10 +1,26 @@
 import { browser } from '$app/environment';
-import { updated } from '$app/state';
+
+function checkIsInstalled(): boolean {
+	if (!browser) return false;
+	return (
+		window.matchMedia('(display-mode: standalone)').matches ||
+		// @ts-expect-error - iOS Safari specific check
+		Boolean(window.navigator?.standalone) ||
+		document.referrer.includes('android-app://')
+	);
+}
+
+function checkIsIos(): boolean {
+	if (!browser) return false;
+	return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
 
 class PwaService {
 	updateAvailable = $state(false);
 	isOnline = $state(true);
 	canInstall = $state(false);
+	isInstalled = $state(false);
+	isIos = $state(false);
 	lastPing = $state<Date | null>(null);
 	pingCount = $state(0);
 	appVersion = $state<string | null>(null);
@@ -14,12 +30,19 @@ class PwaService {
 	private registration: ServiceWorkerRegistration | null = null;
 	private intervalId: any = null;
 	private isInitialized = false;
+	private hadControllerOnLoad = false;
 
 	init() {
 		if (!browser || this.isInitialized) return;
 		this.isInitialized = true;
 
 		this.isOnline = navigator.onLine;
+		this.isInstalled = checkIsInstalled();
+		this.isIos = checkIsIos();
+
+		// Record whether a Service Worker was ALREADY controlling the page when it loaded.
+		// If false, this is the first visit on this device, so initial SW install is NOT an update!
+		this.hadControllerOnLoad = Boolean(navigator.serviceWorker?.controller);
 
 		window.addEventListener('online', () => {
 			this.isOnline = true;
@@ -30,15 +53,18 @@ class PwaService {
 			this.isOnline = false;
 		});
 
-		// PWA install prompt handler
+		// PWA install prompt handler (Chrome / Edge / Android)
 		window.addEventListener('beforeinstallprompt', (e) => {
 			e.preventDefault();
 			this.deferredPrompt = e;
-			this.canInstall = true;
+			if (!this.isInstalled) {
+				this.canInstall = true;
+			}
 		});
 
 		window.addEventListener('appinstalled', () => {
 			this.canInstall = false;
+			this.isInstalled = true;
 			this.deferredPrompt = null;
 		});
 
@@ -75,8 +101,9 @@ class PwaService {
 			const reg = await navigator.serviceWorker.ready;
 			this.registration = reg;
 
-			// If there is already a waiting service worker, update is ready
-			if (reg.waiting) {
+			// If there is already a waiting service worker AND the page already had a controller on load,
+			// an update was waiting before this page opened.
+			if (reg.waiting && this.hadControllerOnLoad) {
 				this.updateAvailable = true;
 			}
 
@@ -86,7 +113,9 @@ class PwaService {
 				if (!newWorker) return;
 
 				newWorker.addEventListener('statechange', () => {
-					if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+					// Only trigger update if the page had a controller when it loaded!
+					// Prevents initial installation on first visit from triggering a false update notice.
+					if (newWorker.state === 'installed' && this.hadControllerOnLoad) {
 						this.updateAvailable = true;
 					}
 				});
@@ -124,30 +153,22 @@ class PwaService {
 				const data = await res.json();
 				if (data && data.version) {
 					if (this.appVersion === null) {
+						// Record initial baseline version for this session
 						this.appVersion = data.version;
 					} else if (this.appVersion !== data.version) {
-						// Server version changed!
+						// Server version changed on Azure!
+						console.log('[PWA] New server version detected:', data.version, 'current:', this.appVersion);
 						this.updateAvailable = true;
 					}
 				}
 			}
 
-			// Also trigger SvelteKit's native version check
-			try {
-				const hasNewVersion = await updated.check();
-				if (hasNewVersion) {
-					this.updateAvailable = true;
-				}
-			} catch {
-				// Ignore transient network errors during updated.check()
-			}
-
-			// Also trigger Service Worker update check
-			if (this.registration) {
+			// Periodically check if a service worker update is ready
+			if (this.registration && this.hadControllerOnLoad) {
 				try {
 					await this.registration.update();
 				} catch {
-					// Ignore transient network errors during registration.update()
+					// Ignore transient network errors
 				}
 			}
 
@@ -175,13 +196,14 @@ class PwaService {
 		}
 	}
 
-	async install() {
+	async install(): Promise<boolean> {
 		if (!this.deferredPrompt) return false;
 		try {
 			this.deferredPrompt.prompt();
 			const choice = await this.deferredPrompt.userChoice;
 			if (choice.outcome === 'accepted') {
 				this.canInstall = false;
+				this.isInstalled = true;
 				this.deferredPrompt = null;
 				return true;
 			}

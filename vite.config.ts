@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
 	process.env.APP_VERSION = buildVersion;
 
 	return {
+		define: {
+			__APP_VERSION__: JSON.stringify(buildVersion)
+		},
 		plugins: [
 			tailwindcss(),
 			sveltekit({
@@ -32,7 +35,7 @@ export default defineConfig(({ mode }) => {
 				},
 				adapter: adapter(),
 				version: {
-					pollInterval: 120_000,
+					pollInterval: 0, // Handled by our unified Azure keep-alive & version poller
 					name: buildVersion
 				}
 			})

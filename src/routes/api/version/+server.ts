@@ -1,6 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+declare const __APP_VERSION__: string;
+
 export const GET: RequestHandler = async ({ setHeaders }) => {
 	// Disable caching entirely so Azure App Service free tier receives every ping
 	// and keeps the instance active and warm.
@@ -12,7 +14,9 @@ export const GET: RequestHandler = async ({ setHeaders }) => {
 	});
 
 	const version =
-		process.env.APP_VERSION || process.env.PUBLIC_APP_VERSION || '1.0.0';
+		typeof __APP_VERSION__ !== 'undefined'
+			? __APP_VERSION__
+			: process.env.APP_VERSION || process.env.PUBLIC_APP_VERSION || '1.0.0';
 
 	return json({
 		ok: true,

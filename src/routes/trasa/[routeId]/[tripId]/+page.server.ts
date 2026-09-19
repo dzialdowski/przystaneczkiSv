@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { getRouteStops, getRouteNameFromDb, getBusDetails, type BusDetails } from '$lib/server/db';
 import { getStopDelays, getRoutesMap, getAllStops } from '$lib/server/tristar';
 import { getShapeIdForTrip, getShapeOffsets, getTripStartTime, resolveShapeId } from '$lib/server/gtfs';
+import { getWarsawTime, diffMinutes } from '$lib/time';
 
 function formatHHMM(min: number): string {
 	const m = ((Math.round(min) % 1440) + 1440) % 1440;
@@ -150,9 +151,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			if (gtfsStart) {
 				theoParam = gtfsStart;
 			} else {
-				// Fallback: Aktualny czas
-				const now = new Date();
-				theoParam = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+				// Fallback: Aktualny czas w strefie polskiej (Europe/Warsaw)
+				theoParam = getWarsawTime().timeString;
 			}
 		}
 	}
@@ -177,9 +177,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	const startMinutes = theoMinAtFrom - fromOffset;
 	const delayMin = Math.round(delaySec / 60);
 
-	// 10. Porównanie z aktualnym czasem dla określenia statusu (odjechał / następny / przyszły)
-	const now = new Date();
-	const nowMinutes = now.getHours() * 60 + now.getMinutes();
+	// 10. Porównanie z aktualnym czasem w strefie Europe/Warsaw
+	// (gwarantuje poprawne wyliczanie niezależnie od strefy serwera np. UTC w chmurze/Azure)
+	const warsawNow = getWarsawTime();
+	const nowMinutes = warsawNow.hours * 60 + warsawNow.minutes;
 
 	let nextStopFound = false;
 
@@ -191,20 +192,17 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		const theoreticalTime = formatHHMM(sTheoMin);
 		const estimatedTime = formatHHMM(sEstMin);
 
-		// Obliczenie różnicy czasu w minutach względem teraz
-		// uwzględniając zawijanie doby (-720 .. +720)
-		let diffMin = (sEstMin - nowMinutes) % 1440;
-		if (diffMin < -720) diffMin += 1440;
-		if (diffMin > 720) diffMin -= 1440;
+		// Obliczenie różnicy czasu w minutach względem teraz (z uwzględnieniem zawijania doby)
+		const diffMin = diffMinutes(sEstMin, nowMinutes);
 
 		let status: 'passed' | 'next' | 'upcoming' = 'upcoming';
 		let isNext = false;
 		let isPassed = false;
 
-		if (diffMin < -1) {
+		if (diffMin < 0) {
 			status = 'passed';
 			isPassed = true;
-		} else if (!nextStopFound && diffMin >= -1) {
+		} else if (!nextStopFound && diffMin >= 0) {
 			status = 'next';
 			isNext = true;
 			nextStopFound = true;
@@ -225,9 +223,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		};
 	});
 
-	// Jeśli żaden nie został oznaczony jako następny (np. cały kurs jest w przyszłości),
-	// pierwszy przystanek staje się następnym
-	if (!nextStopFound && stopsWithTimes.length > 0) {
+	// Jeśli żaden nie został oznaczony jako następny, sprawdzamy:
+	// - Jeśli wszystkie minęły (kurs zakończony) -> żaden nie jest "następny"
+	// - Jeśli kurs jest w przyszłości -> pierwszy staje się następnym
+	const allPassed = stopsWithTimes.every((s) => s.isPassed);
+	if (!nextStopFound && !allPassed && stopsWithTimes.length > 0) {
 		stopsWithTimes[0].isNext = true;
 		stopsWithTimes[0].status = 'next';
 	}
@@ -241,8 +241,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		vehicleCode,
 		vehicleDetails,
 		delaySeconds: delaySec,
-		serverNowMinutes: nowMinutes,
-		serverTimestamp: now.getTime(),
+		serverNowMinutes: warsawNow.nowMinutes,
+		serverTimestamp: Date.now(),
 		stops: stopsWithTimes
 	};
 };
