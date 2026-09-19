@@ -89,7 +89,7 @@
 
 	async function toggleFavorite() {
 		if (!user) {
-			showToast('Zaloguj się, aby dodawać ulubione do bazy MSSQL');
+			showToast('Zaloguj się, aby dodawać przystanki do ulubionych');
 			return;
 		}
 
@@ -107,7 +107,7 @@
 			});
 			if (res.ok) {
 				favorites = [...favorites, { user_id: String(user.id), stop_id: selectedStopId, stop_name: currentStopName }];
-				showToast('Dodano przystanek do ulubionych w bazie MSSQL! ⭐');
+				showToast('Dodano przystanek do ulubionych! ⭐');
 			}
 		}
 	}
@@ -252,7 +252,7 @@
 				</div>
 				<div>
 					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Moje przystanki</h3>
-					<p class="text-[11px] text-slate-400">Zarządzaj swoją bazą ulubionych przystanków</p>
+					<p class="text-[11px] text-slate-400">Zarządzaj listą swoich ulubionych przystanków</p>
 				</div>
 			</a>
 

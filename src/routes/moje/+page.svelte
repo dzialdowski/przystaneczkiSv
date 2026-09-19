@@ -85,7 +85,7 @@
 			selectedForAdd = null;
 			searchAddQuery = '';
 			customName = '';
-			showToast('Dodano przystanek do bazy MSSQL! ⭐');
+			showToast('Dodano przystanek do ulubionych! ⭐');
 		}
 	}
 
@@ -120,7 +120,7 @@
 				f.stop_id === stopId ? { ...f, stop_name: editingName.trim() } : f
 			);
 			editingStopId = null;
-			showToast('Zaktualizowano nazwę przystanku w MSSQL');
+			showToast('Zaktualizowano nazwę przystanku');
 		}
 	}
 
@@ -133,7 +133,7 @@
 		if (res.ok) {
 			const resData = await res.json();
 			legacyMode = resData.legacyMode;
-			showToast(`Zmieniono tryb na: ${legacyMode ? 'Retro (stary wygląd)' : 'Aktualny'}`);
+			showToast(`Zmieniono styl na: ${legacyMode ? 'Bursztynowy (Retro)' : 'Nowoczesny'}`);
 		}
 	}
 </script>
@@ -170,7 +170,7 @@
 					class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition {legacyMode ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}"
 				>
 					<Sparkles class="w-3.5 h-3.5" />
-					Wygląd: <span class="font-bold">{legacyMode ? 'stary (retro)' : 'aktualny'}</span>
+					Styl: <span class="font-bold">{legacyMode ? 'bursztynowy (retro)' : 'nowoczesny'}</span>
 				</button>
 
 				<a
@@ -198,7 +198,7 @@
 				<span>Moje ulubione przystanki</span>
 			</h1>
 			<p class="text-xs text-slate-400 mt-1">
-				Zarządzanie przystankami zapisanymi w tabeli <code class="text-amber-400 font-mono-board">[dbo].[VancoFavs]</code> na serwerze Azure SQL.
+				Zarządzaj swoją listą ulubionych przystanków i dostosowuj ich nazwy.
 			</p>
 		</div>
 
@@ -206,7 +206,7 @@
 			<div class="p-8 text-center bg-slate-900/60 rounded-3xl border border-slate-800 space-y-3">
 				<h2 class="text-base font-bold text-rose-400">Nie jesteś zalogowany</h2>
 				<p class="text-xs text-slate-400 max-w-md mx-auto">
-					Aby zarządzać swoimi ulubionymi przystankami w bazie danych, zaloguj się przez bota Telegrama lub wybierz profil w menu.
+					Aby zarządzać swoimi ulubionymi przystankami, zaloguj się przez Telegram lub wybierz profil w menu.
 				</p>
 			</div>
 		{:else if favorites.length === 0}
@@ -216,7 +216,7 @@
 				</div>
 				<h2 class="text-base font-bold text-white">Brak ulubionych przystanków</h2>
 				<p class="text-xs text-slate-400 max-w-sm mx-auto">
-					Nie masz jeszcze przypisanych przystanków w bazie danych. Kliknij poniżej, aby dodać swój pierwszy słupek!
+					Nie masz jeszcze dodanych przystanków. Kliknij poniżej, aby dodać swój pierwszy przystanek!
 				</p>
 				<button
 					onclick={() => showAddModal = true}
@@ -280,7 +280,7 @@
 							<button
 								onclick={() => handleDelete(fav.stop_id)}
 								class="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white transition"
-								title="Usuń z bazy"
+								title="Usuń z ulubionych"
 							>
 								<Trash2 class="w-4 h-4" />
 							</button>
@@ -313,7 +313,7 @@
 				</div>
 
 				{#if searchingStops}
-					<p class="text-xs text-slate-400 text-center py-2">Szukanie w bazie TRISTAR...</p>
+					<p class="text-xs text-slate-400 text-center py-2">Wyszukiwanie przystanków...</p>
 				{:else if addResults.length > 0}
 					<div class="max-h-48 overflow-y-auto divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/80">
 						{#each addResults as item}
@@ -353,7 +353,7 @@
 							onclick={handleSaveNew}
 							class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition shadow-lg shadow-amber-500/20"
 						>
-							Zapisz w bazie MSSQL
+							Zapisz przystanek
 						</button>
 					</div>
 				{/if}

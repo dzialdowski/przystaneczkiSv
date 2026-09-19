@@ -109,10 +109,10 @@
 			{/if}
 		</div>
 	{:else if legacyMode}
-		<!-- TRYB LEGACY (Odwzorowanie wyglądu starego index.php / ajaxReturn.php z retro tabelą) -->
+		<!-- TRYB RETRO (Klasyczny bursztynowy styl tabeli) -->
 		<div class="overflow-x-auto rounded-xl border border-neutral-700 bg-black p-4 text-xs font-mono transition-opacity duration-200 {loading ? 'opacity-85' : 'opacity-100'}">
 			<div class="text-center font-bold text-amber-400 text-sm mb-2 uppercase flex items-center justify-center gap-2">
-				<span>[ TRYB RETRO PHP ] {stopName}</span>
+				<span>[ TRYB RETRO ] {stopName}</span>
 				{#if loading}
 					<span class="inline-flex items-center gap-1 text-[11px] text-amber-300 font-normal lowercase">
 						<RefreshCw class="w-3 h-3 animate-spin" />
@@ -269,7 +269,7 @@
 										</span>
 									{/if}
 
-									<!-- Informacje o pojeździe z bazy MSSQL -->
+									<!-- Informacje o pojeździe -->
 									{#if row.vehicleCode}
 										<span class="text-slate-500">•</span>
 										<a

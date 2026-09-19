@@ -121,14 +121,14 @@
 				<option value="" disabled>-- WYBIERZ PRZYSTANEK Z LISTY --</option>
 
 				{#if favorites && favorites.length > 0}
-					<optgroup label="⭐ Moje ulubione przystanki (Baza MSSQL)">
+					<optgroup label="⭐ Moje ulubione przystanki">
 						{#each favorites as fav}
 							<option value={fav.stop_id}>⭐ {fav.stop_name}</option>
 						{/each}
 					</optgroup>
 				{/if}
 
-				<optgroup label="📍 Główne węzły i przystanki (Top 20 Demo)">
+				<optgroup label="📍 Główne węzły i przystanki">
 					{#each DEMO_STOPS as s}
 						<option value={s.id}>📍 {s.name} ({s.region})</option>
 					{/each}

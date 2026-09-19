@@ -50,7 +50,7 @@
 				<div class="text-center space-y-2">
 					<h1 class="text-3xl font-black text-white">Logowanie do Przystaneczków</h1>
 					<p class="text-xs text-slate-400 max-w-sm mx-auto">
-						Połącz konto Telegram, aby zsynchronizować listę ulubionych słupków przystankowych z bazą danych.
+						Połącz konto Telegram, aby zsynchronizować listę swoich ulubionych przystanków.
 					</p>
 				</div>
 
@@ -62,9 +62,9 @@
 						Jak to działa?
 					</div>
 					<ul class="list-disc pl-4 space-y-1 text-[11px]">
-						<li>Oficjalny widget Telegram Login weryfikuje Twoją tożsamość kryptograficznie (HMAC-SHA256).</li>
-						<li>Twój unikalny identyfikator Telegram przypisuje Twoje ulubione przystanki w tabeli <code>[dbo].[VancoFavs]</code>.</li>
-						<li>Adres autoryzowany w BotFather (<code>/setdomain</code>): adres Twojej domeny lub <strong>http://127.0.0.1:5173</strong> w środowisku lokalnym.</li>
+						<li>Logowanie odbywa się bezpośrednio i bezpiecznie przez oficjalną usługę Telegram.</li>
+						<li>Twoje ulubione przystanki oraz preferencje stylizacji tablicy są synchronizowane i zapamiętywane na każdym Twoim urządzeniu.</li>
+						<li>Aplikacja odczytuje wyłącznie Twoje publiczne imię i identyfikator konta – nie ma dostępu do Twoich wiadomości ani haseł.</li>
 					</ul>
 				</div>
 			</div>

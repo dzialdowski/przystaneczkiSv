@@ -45,7 +45,7 @@
 
 		if (!activeBotId) {
 			loginStatus = 'error';
-			statusMessage = 'Brak skonfigurowanego identyfikatora bota Telegram (BOT_ID / PUBLIC_BOT_ID w .env).';
+			statusMessage = 'Brak skonfigurowanego identyfikatora logowania Telegram.';
 			return;
 		}
 
@@ -91,7 +91,7 @@
 				cleanUpListeners();
 
 				if (data.result !== undefined || data.auth_data || data.user) {
-					statusMessage = 'Weryfikowanie konta z bazą danych...';
+					statusMessage = 'Logowanie do profilu...';
 					try {
 						const payloadToSend: any = {
 							raw: data
@@ -120,11 +120,11 @@
 							}, 600);
 						} else {
 							loginStatus = 'error';
-							statusMessage = resData.error || 'Nie udało się zweryfikować tokena.';
+							statusMessage = resData.error || 'Nie udało się zweryfikować konta.';
 						}
 					} catch (e: any) {
 						loginStatus = 'error';
-						statusMessage = 'Błąd serwera: ' + e.message;
+						statusMessage = 'Wystąpił błąd podczas logowania: ' + e.message;
 					}
 				} else if (data.error) {
 					loginStatus = 'error';
@@ -159,7 +159,7 @@
 		<div class="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-2xl text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-lg">
 			<div class="flex items-center gap-2">
 				<AlertCircle class="w-4 h-4 text-amber-400 shrink-0" />
-				<span>Otwarto przez <strong>localhost</strong>. W środowisku lokalnym BotFather zazwyczaj autoryzuje <strong>127.0.0.1</strong>.</span>
+				<span>Otwarto przez <strong>localhost</strong>. W środowisku lokalnym logowanie Telegram wymaga adresu <strong>127.0.0.1</strong>.</span>
 			</div>
 			<button
 				onclick={redirectTo127}

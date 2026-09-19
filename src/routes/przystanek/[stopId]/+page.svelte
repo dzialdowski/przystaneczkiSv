@@ -64,7 +64,7 @@
 			});
 			if (res.ok) {
 				favorites = [...favorites, { user_id: String(user.id), stop_id: data.stopId, stop_name: data.stopName }];
-				toastMsg = 'Dodano do ulubionych w bazie MSSQL! ⭐';
+				toastMsg = 'Dodano do ulubionych! ⭐';
 			}
 		}
 	}
@@ -110,7 +110,7 @@
 					class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition {isFav ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}"
 				>
 					<Star class="w-3.5 h-3.5 {isFav ? 'fill-slate-950' : ''}" />
-					<span>{isFav ? 'Ulubiony' : 'Dodaj do bazy ulubionych'}</span>
+					<span>{isFav ? 'Ulubiony' : 'Dodaj do ulubionych'}</span>
 				</button>
 			</div>
 		</div>

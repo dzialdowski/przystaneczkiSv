@@ -179,7 +179,7 @@
 							<span class="text-xs font-mono-board font-bold text-slate-200">
 								#{vCode}
 							</span>
-							<span class="text-[10px] text-slate-500 mt-0.5">Brak zdjęcia w bazie</span>
+							<span class="text-[10px] text-slate-500 mt-0.5">Brak zdjęcia</span>
 						</div>
 					{/if}
 
@@ -247,7 +247,7 @@
 
 								{#if !data.vehicleDetails?.klima && !data.vehicleDetails?.usb && otherFeatures.length === 0}
 									<span class="text-xs text-slate-500 italic">
-										Brak szczegółowego wykazu wyposażenia w bazie ZKM dla tego pojazdu.
+										Brak szczegółowego wykazu wyposażenia dla tego pojazdu.
 									</span>
 								{/if}
 							</div>
