@@ -136,6 +136,7 @@
 		<!-- Tablica odjazdów -->
 		<DepartureBoard
 			delays={delaysData.delays}
+			lines={delaysData.lines || data.lines || []}
 			lastUpdate={delaysData.lastUpdate}
 			{loading}
 			{legacyMode}

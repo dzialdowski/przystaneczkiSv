@@ -288,13 +288,13 @@
 				</div>
 
 				<div>
-					<label for="stop-search-modal" class="text-xs text-slate-400 block mb-1">Krok 1: Wyszukaj słupek przystankowy ZKM:</label>
+					<label for="stop-search-modal" class="text-xs text-slate-400 block mb-1">Krok 1: Wyszukaj słupek przystankowy ZKM (np. nazwa lub linia):</label>
 					<input
 						id="stop-search-modal"
 						type="text"
 						value={searchAddQuery}
 						oninput={handleSearchStops}
-						placeholder="Wpisz nazwę (np. Chylonia, Morska, Wzgórze)..."
+						placeholder="Wpisz nazwę (np. Chylonia, Morska, Wzgórze) lub linię..."
 						class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
 					/>
 				</div>
@@ -302,16 +302,32 @@
 				{#if searchingStops}
 					<p class="text-xs text-slate-400 text-center py-2">Wyszukiwanie przystanków...</p>
 				{:else if addResults.length > 0}
-					<div class="max-h-48 overflow-y-auto divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/80">
+					<div class="max-h-56 overflow-y-auto divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/80">
 						{#each addResults as item}
 							<button
 								onclick={() => {
 									selectedForAdd = item;
 									customName = item.stopName;
 								}}
-								class="w-full p-2.5 text-left text-xs hover:bg-amber-500/10 flex items-center justify-between {selectedForAdd?.stopId === item.stopId ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-slate-200'}"
+								class="w-full p-2.5 text-left text-xs hover:bg-amber-500/10 flex flex-col gap-1 transition {selectedForAdd?.stopId === item.stopId ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-slate-200'}"
 							>
-								<span>{item.stopName} {item.stopCode ? `(${item.stopCode})` : ''}</span>
+								<div class="flex items-center justify-between">
+									<span>{item.stopName} {item.stopCode ? `(${item.stopCode})` : ''}</span>
+									<span class="text-[10px] text-slate-400">{item.zoneId || 'Gdynia'}</span>
+								</div>
+								{#if item.lines && item.lines.length > 0}
+									<div class="flex flex-wrap gap-1 items-center">
+										{#each item.lines as lineInfo}
+											<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] text-slate-300">
+												<span class="font-extrabold text-amber-400">{lineInfo.line}</span>
+												{#if !lineInfo.isTerminus && lineInfo.directions.length > 0}
+													<span class="text-slate-500 text-[8px]">➔</span>
+													<span class="text-slate-400 truncate max-w-[140px]">{lineInfo.directions[0]}</span>
+												{/if}
+											</span>
+										{/each}
+									</div>
+								{/if}
 							</button>
 						{/each}
 					</div>

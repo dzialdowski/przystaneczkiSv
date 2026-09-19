@@ -35,6 +35,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		stopId,
 		stopName,
-		initialDelays
+		initialDelays,
+		lines: initialDelays.lines || []
 	};
 };

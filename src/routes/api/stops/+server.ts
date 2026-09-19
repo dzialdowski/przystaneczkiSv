@@ -16,12 +16,25 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		const filtered = allStops.filter((s) => {
-			return (
+			const textMatch =
 				s.stopName.toLowerCase().includes(query) ||
 				(s.stopCode && s.stopCode.toLowerCase().includes(query)) ||
 				(s.stopDesc && s.stopDesc.toLowerCase().includes(query)) ||
-				String(s.stopId).includes(query)
-			);
+				String(s.stopId).includes(query);
+
+			if (textMatch) return true;
+
+			if (s.lines && s.lines.length > 0) {
+				return s.lines.some((l) => {
+					const lineMatch =
+						l.line.toLowerCase() === query ||
+						l.line.toLowerCase().startsWith(query);
+					const dirMatch = l.directions.some((d) => d.toLowerCase().includes(query));
+					return lineMatch || dirMatch;
+				});
+			}
+
+			return false;
 		});
 
 		return json(limit > 0 ? filtered.slice(0, limit) : filtered);

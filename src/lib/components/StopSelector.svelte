@@ -58,7 +58,7 @@
 			type="text"
 			value={searchQuery}
 			oninput={handleSearchInput}
-			placeholder="Wpisz nazwę przystanku (np. Dworzec Główny, Wzgórze, Obłuże)..."
+			placeholder="Wpisz przystanek, linię lub kierunek (np. 21, Dworzec Główny, Sopot)..."
 			class="w-full pl-10 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-lg"
 		/>
 		{#if searchQuery}
@@ -72,7 +72,7 @@
 
 		<!-- Wyniki wyszukiwania w locie -->
 		{#if searchQuery.trim().length >= 2}
-			<div class="absolute left-0 right-0 top-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl z-30 max-h-72 overflow-y-auto divide-y divide-slate-800/60">
+			<div class="absolute left-0 right-0 top-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl z-30 max-h-80 overflow-y-auto divide-y divide-slate-800/60">
 				{#if isSearching}
 					<div class="p-4 text-center text-xs text-slate-400">Szukanie przystanków...</div>
 				{:else if searchResults.length === 0}
@@ -81,19 +81,38 @@
 					{#each searchResults as item}
 						<button
 							onclick={() => handleSelect(String(item.stopId), item.stopName)}
-							class="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-amber-500/10 transition group"
+							class="w-full px-4 py-3 text-left flex flex-col gap-1.5 hover:bg-amber-500/10 transition group"
 						>
-							<div class="flex items-center gap-2.5">
-								<Bus class="w-4 h-4 text-amber-400 group-hover:scale-110 transition" />
-								<div>
-									<span class="font-bold text-white text-xs block group-hover:text-amber-300">
+							<div class="flex items-center justify-between gap-2">
+								<div class="flex items-center gap-2.5 min-w-0">
+									<Bus class="w-4 h-4 text-amber-400 shrink-0 group-hover:scale-110 transition" />
+									<span class="font-bold text-white text-xs block group-hover:text-amber-300 truncate">
 										{item.stopName}
 									</span>
-									<span class="text-[10px] text-slate-400">
-										{item.zoneId || 'Gdynia'} {item.stopCode ? `• Słupek ${item.stopCode}` : ''}
-									</span>
 								</div>
+								<span class="text-[10px] text-slate-400 shrink-0 font-medium">
+									{item.zoneId || 'Gdynia'}{item.stopCode ? ` • Słupek ${item.stopCode}` : ''}
+								</span>
 							</div>
+
+							<!-- Linie i kierunki na tym słupku -->
+							{#if item.lines && item.lines.length > 0}
+								<div class="flex flex-wrap gap-1.5 pl-6 pt-0.5 items-center">
+									{#each item.lines as lineInfo}
+										<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] leading-tight">
+											<span class="font-extrabold text-amber-400">{lineInfo.line}</span>
+											{#if lineInfo.isTerminus}
+												<span class="text-[9px] text-slate-400">(koniec)</span>
+											{:else if lineInfo.directions && lineInfo.directions.length > 0}
+												<span class="text-slate-500 text-[9px]">➔</span>
+												<span class="text-slate-300 truncate max-w-[140px] sm:max-w-[200px]" title={lineInfo.directions.join(', ')}>
+													{lineInfo.directions.join(', ')}
+												</span>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{/if}
 						</button>
 					{/each}
 				{/if}

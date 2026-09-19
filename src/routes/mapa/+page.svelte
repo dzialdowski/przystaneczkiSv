@@ -55,6 +55,18 @@
 					if (s.stopLat && s.stopLon && !isNaN(s.stopLat) && !isNaN(s.stopLon)) {
 						const marker = L.marker([s.stopLat, s.stopLon], { icon: stopIcon }).addTo(mapInstance);
 
+						const linesHtml = s.lines && s.lines.length > 0
+							? `<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; max-width: 240px;">
+								${s.lines.slice(0, 8).map((l: any) => `
+									<span style="background: #0f172a; color: #f59e0b; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;" title="${l.line}: ${l.directions.join(', ')}">
+										${l.line}
+										${!l.isTerminus && l.directions.length > 0 ? `<span style="color: #cbd5e1; font-weight: normal; font-size: 9px;">➔ ${l.directions[0].slice(0, 15)}</span>` : ''}
+									</span>
+								`).join('')}
+								${s.lines.length > 8 ? `<span style="font-size: 9px; color: #64748b; align-self: center; font-weight: 600;">+${s.lines.length - 8}</span>` : ''}
+							</div>`
+							: '';
+
 						const popupContent = document.createElement('div');
 						popupContent.style.fontFamily = 'Outfit, sans-serif';
 						popupContent.style.padding = '4px';
@@ -62,7 +74,8 @@
 							<div style="font-weight: 800; font-size: 14px; color: #0f172a; margin-bottom: 2px;">
 								${s.stopName}
 							</div>
-							${s.zoneId ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Strefa: ${s.zoneId}</div>` : `<div style="margin-bottom: 8px;"></div>`}
+							${s.zoneId ? `<div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">Strefa: ${s.zoneId}${s.stopCode ? ` • Słupek ${s.stopCode}` : ''}</div>` : `<div style="margin-bottom: 6px;"></div>`}
+							${linesHtml}
 							<div style="display: flex; gap: 6px;">
 								<a href="/przystanek/${s.stopId}" style="display: inline-block; background: #f59e0b; color: #090d16; font-weight: 700; font-size: 11px; padding: 6px 10px; border-radius: 8px; text-decoration: none;">
 									Odjazdy na żywo ➔
@@ -100,7 +113,10 @@
 		if (!mapQuery.trim() || !mapInstance) return;
 		const query = mapQuery.toLowerCase().trim();
 		const found = stops.find(
-			(s) => s.stopName.toLowerCase().includes(query) || String(s.stopId) === query
+			(s) =>
+				s.stopName.toLowerCase().includes(query) ||
+				String(s.stopId) === query ||
+				(s.lines && s.lines.some((l) => l.line.toLowerCase() === query || l.directions.some((d) => d.toLowerCase().includes(query))))
 		);
 		if (found && found.stopLat && found.stopLon) {
 			mapInstance.flyTo([found.stopLat, found.stopLon], 16);
@@ -147,7 +163,7 @@
 					type="text"
 					bind:value={mapQuery}
 					onkeydown={(e) => e.key === 'Enter' && handleSearchMap()}
-					placeholder="Przejdź do przystanku..."
+					placeholder="Przejdź do przystanku lub linii..."
 					class="w-48 sm:w-64 pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
 				/>
 				<Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" />

@@ -1,4 +1,7 @@
 import { getBusDetails, getRouteNameFromDb } from './db';
+import { getLinesForStop, getStopLinesMap, type StopLineInfo } from './gtfs.ts';
+
+export type { StopLineInfo };
 
 export const TRISTAR_API_BASE_URL = process.env.TRISTAR_API_BASE_URL || 'http://api.zdiz.gdynia.pl/pt';
 
@@ -46,6 +49,7 @@ export interface DelaysResponse {
 	stopName?: string;
 	lastUpdate: string;
 	delays: EnrichedDelayItem[];
+	lines?: StopLineInfo[];
 }
 
 export interface TristarStop {
@@ -56,6 +60,7 @@ export interface TristarStop {
 	stopLat: number;
 	stopLon: number;
 	zoneId: string;
+	lines?: StopLineInfo[];
 }
 
 export interface TristarRoute {
@@ -125,16 +130,23 @@ export async function getAllStops(): Promise<TristarStop[]> {
 		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+		const routesMap = await getRoutesMap();
+		const stopLinesMap = getStopLinesMap(routesMap);
+
 		const rawStops: any[] = await res.json();
-		const stops: TristarStop[] = rawStops.map((s) => ({
-			stopId: Number(s.stopId),
-			stopCode: s.stopCode ? String(s.stopCode) : '',
-			stopName: s.stopName ? String(s.stopName).trim() : 'Przystanek',
-			stopDesc: s.stopDesc ? String(s.stopDesc).trim() : '',
-			stopLat: parseFloat(s.stopLat),
-			stopLon: parseFloat(s.stopLon),
-			zoneId: s.zoneId ? String(s.zoneId).trim() : ''
-		}));
+		const stops: TristarStop[] = rawStops.map((s) => {
+			const sId = Number(s.stopId);
+			return {
+				stopId: sId,
+				stopCode: s.stopCode ? String(s.stopCode) : '',
+				stopName: s.stopName ? String(s.stopName).trim() : 'Przystanek',
+				stopDesc: s.stopDesc ? String(s.stopDesc).trim() : '',
+				stopLat: parseFloat(s.stopLat),
+				stopLon: parseFloat(s.stopLon),
+				zoneId: s.zoneId ? String(s.zoneId).trim() : '',
+				lines: stopLinesMap.get(sId) || []
+			};
+		});
 
 		stopsCache = { timestamp: now, data: stops };
 		return stops;
@@ -208,7 +220,6 @@ export function formatDelayStatus(delayInSeconds: number): {
 export async function getStopDelays(stopId: string | number): Promise<DelaysResponse> {
 	const cleanStopId = String(stopId).trim();
 	const url = `${TRISTAR_API_BASE_URL}/delays?stopId=${cleanStopId}`;
-
 	let rawJson: { lastUpdate?: string; delay?: RawDelayItem[] } = {};
 	try {
 		const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -265,9 +276,13 @@ export async function getStopDelays(stopId: string | number): Promise<DelaysResp
 		})
 	);
 
+	// Pobierz linie obsługujące ten przystanek
+	const stopLines = getLinesForStop(cleanStopId, routesMap);
+
 	return {
 		stopId: cleanStopId,
 		lastUpdate,
-		delays: enrichedDelays
+		delays: enrichedDelays,
+		lines: stopLines
 	};
 }

@@ -220,6 +220,7 @@
 		<!-- Główna tablica odjazdów -->
 		<DepartureBoard
 			delays={delaysData.delays}
+			lines={delaysData.lines || []}
 			lastUpdate={delaysData.lastUpdate}
 			loading={loadingDelays}
 			{legacyMode}

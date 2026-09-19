@@ -37,10 +37,19 @@ export interface GtfsCacheData {
 	shapeOffsets?: Record<string, number[]>;
 	tripStart?: Record<string, string>;
 	routeShapes?: Record<string, RouteShapeOption[]>;
+	routeNames?: Record<string, string>;
+}
+
+export interface StopLineInfo {
+	line: string;
+	routeId?: number;
+	directions: string[];
+	isTerminus?: boolean;
 }
 
 // Pamięć podręczna w procesie dla szybkiego dostępu
 let inMemoryGtfsData: GtfsCacheData | null = null;
+let stopLinesIndexCache: Map<number, StopLineInfo[]> | null = null;
 
 export function getGtfsData(): GtfsCacheData | null {
 	if (inMemoryGtfsData) return inMemoryGtfsData;
@@ -55,12 +64,112 @@ export function getGtfsData(): GtfsCacheData | null {
 	return null;
 }
 
+function cleanHeadsign(str: string): string {
+	return (str || '')
+		.replace(/""/g, '"')
+		.replace(/\s+\d+$/, '') // usuń końcowe numery słupków np. " 01", " 02"
+		.trim();
+}
+
 function normalizeHeadsign(str: string): string {
 	return (str || '')
 		.toLowerCase()
 		.replace(/\s+\d+$/, '') // usuń końcowe numery słupków np. " 01", " 02"
 		.replace(/[^a-ząćęłńóśźż0-9]/gi, '')
 		.trim();
+}
+
+/**
+ * Zwraca mapę wszystkich przystanków do obsługujących je linii i kierunków
+ */
+export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopLineInfo[]> {
+	if (stopLinesIndexCache && stopLinesIndexCache.size > 0) {
+		return stopLinesIndexCache;
+	}
+
+	const data = getGtfsData();
+	if (!data || !data.routeShapes || !data.shapePatterns) {
+		return new Map();
+	}
+
+	const stopMap = new Map<number, Map<string, { routeId?: number; departures: Set<string>; arrivals: Set<string> }>>();
+
+	for (const [rId, shapes] of Object.entries(data.routeShapes)) {
+		const numRId = Number(rId);
+		let line = '';
+		if (routesMap) {
+			const found = routesMap.get(numRId);
+			if (typeof found === 'string') line = found;
+			else if (found && typeof found === 'object' && found.routeShortName) line = found.routeShortName;
+		}
+		if (!line && data.routeNames) {
+			line = data.routeNames[rId];
+		}
+		if (!line) {
+			line = rId;
+		}
+
+		for (const shape of shapes) {
+			const pattern = data.shapePatterns[String(shape.shapeId)];
+			if (!pattern) continue;
+			const len = pattern.length;
+			const headsign = cleanHeadsign(shape.headsign);
+			if (!headsign) continue;
+
+			for (let i = 0; i < len; i++) {
+				const stopId = pattern[i];
+				if (stopId === null || stopId === undefined) continue;
+				const isTerminus = i === len - 1;
+
+				if (!stopMap.has(stopId)) stopMap.set(stopId, new Map());
+				const stopLines = stopMap.get(stopId)!;
+
+				if (!stopLines.has(line)) {
+					stopLines.set(line, { routeId: numRId, departures: new Set(), arrivals: new Set() });
+				}
+				const lineData = stopLines.get(line)!;
+				if (isTerminus) {
+					lineData.arrivals.add(headsign);
+				} else {
+					lineData.departures.add(headsign);
+				}
+			}
+		}
+	}
+
+	const result = new Map<number, StopLineInfo[]>();
+	for (const [stopId, stopLines] of stopMap.entries()) {
+		const list: StopLineInfo[] = [];
+		for (const [line, d] of stopLines.entries()) {
+			const departures = Array.from(d.departures);
+			const arrivals = Array.from(d.arrivals);
+			if (departures.length > 0) {
+				list.push({ line, routeId: d.routeId, directions: departures, isTerminus: false });
+			} else if (arrivals.length > 0) {
+				list.push({ line, routeId: d.routeId, directions: arrivals, isTerminus: true });
+			}
+		}
+		list.sort((a, b) => {
+			const aNum = /^\d+$/.test(a.line);
+			const bNum = /^\d+$/.test(b.line);
+			if (aNum && bNum) return parseInt(a.line, 10) - parseInt(b.line, 10);
+			if (aNum) return -1;
+			if (bNum) return 1;
+			return a.line.localeCompare(b.line, 'pl', { numeric: true });
+		});
+		result.set(stopId, list);
+	}
+
+	stopLinesIndexCache = result;
+	return result;
+}
+
+/**
+ * Zwraca linie i kierunki odjeżdżające z danego przystanku
+ */
+export function getLinesForStop(stopId: number | string, routesMap?: Map<number, any>): StopLineInfo[] {
+	const map = getStopLinesMap(routesMap);
+	return map.get(Number(stopId)) || [];
 }
 
 /**
@@ -196,6 +305,7 @@ export async function syncGtfsData(onProgress?: (msg: string) => void): Promise<
 		// 1. Synchronizacja linii z routes.txt
 		let routesCount = 0;
 		const routesEntry = zip.getEntry('routes.txt');
+		const routeNamesObj: Record<string, string> = {};
 		if (routesEntry) {
 			log('Synchronizowanie linii (routes.txt)...');
 			const routesText = routesEntry.getData().toString('utf8');
@@ -215,6 +325,7 @@ export async function syncGtfsData(onProgress?: (msg: string) => void): Promise<
 				const shortName = (row.route_short_name || '').slice(0, 5).trim();
 				if (!isNaN(rId) && shortName) {
 					routesBatch.push({ routeId: rId, nrBusa: shortName });
+					routeNamesObj[String(rId)] = shortName;
 				}
 			}
 
@@ -343,6 +454,7 @@ export async function syncGtfsData(onProgress?: (msg: string) => void): Promise<
 				routeShapesObj[String(rId)] = Array.from(shapes.values()).sort((a, b) => b.count - a.count);
 			}
 			inMemoryGtfsData = null;
+			stopLinesIndexCache = null;
 		}
 
 		// 4. Synchronizacja tras z stop_times.txt
@@ -519,10 +631,12 @@ export async function syncGtfsData(onProgress?: (msg: string) => void): Promise<
 						shapePatterns: shapePatternsObj,
 						shapeOffsets,
 						tripStart,
-						routeShapes: routeShapesObj
+						routeShapes: routeShapesObj,
+						routeNames: routeNamesObj
 					})
 				);
 				inMemoryGtfsData = null; // Zresetuj pamięć podręczną
+				stopLinesIndexCache = null;
 				log(`Zapisano kompletne mapowanie GTFS do ${GTFS_ROUTES_FILE} (${(fs.statSync(GTFS_ROUTES_FILE).size / 1024).toFixed(1)} KB).`);
 			} catch (cacheErr) {
 				console.warn('Ostrzeżenie przy zapisie cache gtfs_routes.json:', cacheErr);
