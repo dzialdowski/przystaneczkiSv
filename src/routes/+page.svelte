@@ -43,7 +43,7 @@
 	let toastMessage = $state<string | null>(null);
 	let restoredFromSnapshot = false;
 
-	// Stan widoczności sekcji najbliższych przystanków GPS
+	// Stan widoczności sekcji najbliższych przystanków
 	let showNearestStops = $state(false);
 	let nearestStopsComponent = $state<any>(null);
 
@@ -205,20 +205,20 @@
 						{currentStopName}
 					</h1>
 					<p class="text-xs text-slate-400 mt-0.5">
-						Odjazdy w czasie rzeczywistym z systemu TRISTAR ZDiZ Gdynia
+						Odjazdy na żywo z sieci ZKM Gdynia
 					</p>
 				</div>
 
 				<!-- Przyciski akcji dla wybranego przystanku -->
 				<div class="flex flex-wrap items-center gap-2">
-					<!-- Przycisk GPS dla najbliższych przystanków -->
+					<!-- Przycisk dla najbliższych przystanków -->
 					<button
 						onclick={handleToggleGps}
 						class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer shadow-sm {showNearestStops ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20' : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 hover:text-white'}"
-						title="Wyszukaj najbliższe przystanki na podstawie Twojej pozycji GPS"
+						title="Znajdź najbliższe przystanki na podstawie lokalizacji"
 					>
 						<Navigation class="w-3.5 h-3.5 {showNearestStops ? 'fill-slate-950' : ''}" />
-						<span>{showNearestStops ? 'Zwiń GPS' : 'Najbliższe (GPS)'}</span>
+						<span>{showNearestStops ? 'Zwiń listę' : 'W pobliżu'}</span>
 					</button>
 
 					<button
@@ -233,7 +233,7 @@
 						href="/przystanek/{selectedStopId}"
 						class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
 					>
-						<span>Dedykowany link</span>
+						<span>Szczegóły</span>
 					</a>
 				</div>
 			</div>
@@ -246,7 +246,7 @@
 				onOpenGps={handleOpenGps}
 			/>
 
-			<!-- Sekcja najbliższych przystanków GPS -->
+			<!-- Sekcja najbliższych przystanków -->
 			{#if showNearestStops}
 				<div class="pt-2">
 					<NearestStops
@@ -284,7 +284,7 @@
 				</div>
 				<div>
 					<h3 class="text-xs font-bold text-white group-hover:text-cyan-400 transition">Interaktywna mapa</h3>
-					<p class="text-[11px] text-slate-400">Znajdź najbliższy słupek przystankowy w Trójmieście</p>
+					<p class="text-[11px] text-slate-400">Znajdź przystanki na mapie Trójmiasta</p>
 				</div>
 			</a>
 
@@ -297,7 +297,7 @@
 				</div>
 				<div>
 					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Moje przystanki</h3>
-					<p class="text-[11px] text-slate-400">Zarządzaj swoimi ulubionymi i zsynchronizuj z kontem</p>
+					<p class="text-[11px] text-slate-400">Zarządzaj swoimi ulubionymi przystankami</p>
 				</div>
 			</a>
 
@@ -310,8 +310,8 @@
 					<RefreshCw class="w-5 h-5" />
 				</div>
 				<div>
-					<h3 class="text-xs font-bold text-white group-hover:text-emerald-400 transition">Status bazy GTFS</h3>
-					<p class="text-[11px] text-slate-400">Sprawdź status synchronizacji bazy Azure SQL</p>
+					<h3 class="text-xs font-bold text-white group-hover:text-emerald-400 transition">Stan rozkładów</h3>
+					<p class="text-[11px] text-slate-400">Informacje o aktualizacji danych ZDiZ</p>
 				</div>
 			</a>
 		</div>

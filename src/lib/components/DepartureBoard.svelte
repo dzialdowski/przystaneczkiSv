@@ -1,25 +1,26 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
 	import {
 		Clock,
 		AlertTriangle,
-		CheckCircle2,
-		Zap,
-		ExternalLink,
-		RefreshCw,
+		CheckCircle,
+		ArrowRight,
 		Bus,
-		ArrowRight
+		Sparkles,
+		ShieldCheck,
+		ExternalLink,
+		RefreshCw
 	} from 'lucide-svelte';
 	import type { EnrichedDelayItem, StopLineInfo } from '$lib/server/tristar';
+	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
-		delays?: EnrichedDelayItem[];
+		delays: EnrichedDelayItem[];
 		lines?: StopLineInfo[];
-		lastUpdate?: string;
+		lastUpdate: string;
 		loading?: boolean;
 		legacyMode?: boolean;
 		stopName?: string;
-		stopId?: string | number;
+		stopId?: string;
 	}
 
 	let {
@@ -32,20 +33,21 @@
 		stopId = ''
 	}: Props = $props();
 
+	// Rozwijanie pełnej listy kierunków dla linii
 	let showAllServedLines = $state(false);
 
-	function getRouteUrl(row: EnrichedDelayItem) {
+	// Helper do budowania linku do strony trasy/pojazdu
+	function getRouteUrl(row: EnrichedDelayItem): string {
+		const base = `/trasa/${row.routeId}/${row.tripId || 0}`;
 		const params = new URLSearchParams();
-		if (row.trip) params.set('trip', String(row.trip));
-		if (stopId) params.set('fromStop', String(stopId));
-		if (row.theoreticalTime && row.theoreticalTime !== '--:--') params.set('theo', row.theoreticalTime);
-		if (row.estimatedTime && row.estimatedTime !== '--:--') params.set('est', row.estimatedTime);
-		if (typeof row.delayInSeconds === 'number') params.set('delay', String(row.delayInSeconds));
-		if (row.headsign) params.set('headsign', row.headsign);
 		if (row.vehicleCode) params.set('vCode', String(row.vehicleCode));
-		return `/trasa/${row.routeId}/${row.tripId}?${params.toString()}`;
+		if (stopId) params.set('fromStop', stopId);
+		if (row.headsign) params.set('headsign', row.headsign);
+		const qs = params.toString();
+		return qs ? `${base}?${qs}` : base;
 	}
 
+	// Dynamiczne odliczanie w czasie rzeczywistym
 	let currentTime = $state(Date.now());
 	let intervalId: any;
 
@@ -59,24 +61,17 @@
 		if (intervalId) clearInterval(intervalId);
 	});
 
-	/**
-	 * Oblicza czas pozostały do odjazdu w sekundach i minutach na żywo (jak stary czas.js)
-	 */
-	function calculateLiveCountdown(theoreticalTime: string, delayInSeconds: number) {
-		if (!theoreticalTime || theoreticalTime === '--:--') {
-			return { isDeparting: false, text: '---' };
-		}
+	function calculateLiveCountdown(
+		theoreticalTime: string,
+		delayInSeconds: number
+	): { isDeparting: boolean; text: string } {
+		if (!theoreticalTime) return { isDeparting: false, text: '--' };
 
 		try {
-			const parts = theoreticalTime.split(':');
-			const hours = parseInt(parts[0], 10);
-			const minutes = parseInt(parts[1], 10);
-			const seconds = parts.length > 2 ? parseInt(parts[2], 10) : 0;
-
+			const [hours, minutes, seconds] = theoreticalTime.split(':').map(Number);
 			const targetDate = new Date();
-			targetDate.setHours(hours, minutes, seconds, 0);
+			targetDate.setHours(hours, minutes, seconds || 0, 0);
 
-			// Dodaj opóźnienie w sekundach
 			const targetTimestamp = targetDate.getTime() + (delayInSeconds || 0) * 1000;
 			let diffSeconds = Math.floor((targetTimestamp - currentTime) / 1000);
 
@@ -106,7 +101,7 @@
 	{#if loading && (!delays || delays.length === 0)}
 		<div class="flex flex-col items-center justify-center p-12 text-slate-400 bg-slate-900/40 rounded-3xl border border-slate-800">
 			<div class="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-3"></div>
-			<p class="text-sm font-medium">Pobieranie odjazdów TRISTAR...</p>
+			<p class="text-sm font-medium">Pobieranie odjazdów...</p>
 		</div>
 	{:else if !delays || delays.length === 0}
 		<!-- SZCZEGÓLNIE WYRÓŻNIONA SEKCJA GDY NIC NIE JEDZIE W NAJBLIŻSZYM CZASIE -->
@@ -117,11 +112,11 @@
 					[ BRAK ODJAZDÓW W NAJBLIŻSZYM CZASIE ]
 				</div>
 				<div class="text-center text-[11px] text-neutral-400 mb-4">
-					SYSTEM TRISTAR: {lastUpdate || 'BRAK DANYCH'} • {stopName}
+					AKTUALIZACJA: {lastUpdate || 'BRAK DANYCH'} • {stopName}
 				</div>
 
 				<div class="border-t-2 border-b-2 border-amber-500 py-2.5 px-3 mb-4 bg-amber-950/40 font-bold text-amber-200 text-center tracking-wider uppercase">
-					*** OBSŁUGIWANE LINIE I KIERUNKI Z TEGO SŁUPKA ***
+					*** OBSŁUGIWANE LINIE I KIERUNKI ***
 				</div>
 
 				{#if lines && lines.length > 0}
@@ -130,7 +125,7 @@
 							<tr class="border-b border-neutral-700 text-amber-400 bg-neutral-900/90">
 								<th class="p-2.5 text-left w-24">LINIA</th>
 								<th class="p-2.5 text-left">KIERUNEK (DOKĄD JEDZIE)</th>
-								<th class="p-2.5 text-center w-36">STATUS SŁUPKA</th>
+								<th class="p-2.5 text-center w-36">STATUS</th>
 								<th class="p-2.5 text-right w-24">TRASA</th>
 							</tr>
 						</thead>
@@ -165,7 +160,7 @@
 						</tbody>
 					</table>
 				{:else}
-					<div class="p-4 text-center text-neutral-400">BRAK ZDEFINIOWANYCH LINII W BAZIE DANYCH</div>
+					<div class="p-4 text-center text-neutral-400">BRAK LINII DLA TEGO PRZYSTANKU</div>
 				{/if}
 			</div>
 		{:else}
@@ -179,12 +174,12 @@
 					<div class="flex-1">
 						<h3 class="text-base sm:text-lg font-bold text-white mb-0.5">Brak odjazdów w najbliższym czasie</h3>
 						<p class="text-xs text-slate-400 max-w-xl">
-							W tej chwili żaden pojazd nie ma zaplanowanego odjazdu w systemie TRISTAR. Poniżej sprawdzisz wszystkie stałe linie i kierunki odjeżdżające z tego słupka.
+							W tej chwili żaden pojazd nie ma zaplanowanego odjazdu. Poniżej sprawdzisz wszystkie linie i kierunki obsługujące ten przystanek.
 						</p>
 					</div>
 					{#if lastUpdate}
 						<div class="text-[11px] text-slate-500 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800/80 shrink-0">
-							TRISTAR: {lastUpdate}
+							Aktualizacja: {lastUpdate}
 						</div>
 					{/if}
 				</div>
@@ -201,7 +196,7 @@
 								Obsługiwane linie i kierunki
 							</h2>
 							<p class="text-xs text-slate-300 mt-1">
-								Z tego słupka ({stopName || `Przystanek #${stopId}`}) regularnie kursują następujące linie:
+								Z tego przystanku ({stopName || 'Wybrany przystanek'}) regularnie kursują następujące linie:
 							</p>
 						</div>
 
@@ -228,7 +223,7 @@
 													Koniec trasy
 												</span>
 												<div class="text-xs text-slate-400">
-													Słupek dla wysiadających (przyjazd z: {lineInfo.directions.join(', ')})
+													Dla wysiadających (przyjazd z: {lineInfo.directions.join(', ')})
 												</div>
 											{:else}
 												<span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
@@ -249,33 +244,23 @@
 									<!-- Przycisk podglądu trasy -->
 									<a
 										href="/trasa/{lineInfo.routeId || ''}/0?fromStop={stopId}&headsign={encodeURIComponent(lineInfo.directions[0] || '')}"
-										class="w-full py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-amber-500 hover:text-slate-950 text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-700/80 hover:border-amber-400 shadow-sm"
+										class="mt-2 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-slate-400 group-hover:text-amber-400 transition"
 									>
 										<span>Zobacz trasę i przystanki</span>
-										<ExternalLink class="w-3.5 h-3.5" />
+										<ArrowRight class="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
 									</a>
 								</div>
 							{/each}
-						</div>
-					{:else}
-						<div class="p-8 text-center bg-slate-950/60 rounded-2xl border border-slate-800 text-slate-400 text-xs">
-							Brak zdefiniowanych stałych linii dla tego słupka w bazie rozkładów ZKM Gdynia.
 						</div>
 					{/if}
 				</div>
 			</div>
 		{/if}
 	{:else if legacyMode}
-		<!-- TRYB RETRO (Klasyczny bursztynowy styl tabeli) -->
-		<div class="overflow-x-auto rounded-xl border border-neutral-700 bg-black p-4 text-xs font-mono transition-opacity duration-200 {loading ? 'opacity-85' : 'opacity-100'}">
-			<div class="text-center font-bold text-amber-400 text-sm mb-2 uppercase flex items-center justify-center gap-2">
-				<span>[ TRYB RETRO ] {stopName}</span>
-				{#if loading}
-					<span class="inline-flex items-center gap-1 text-[11px] text-amber-300 font-normal lowercase">
-						<RefreshCw class="w-3 h-3 animate-spin" />
-						<span>odświeżanie...</span>
-					</span>
-				{/if}
+		<!-- RETRO TABLICA W STYLU SYSTEMU TRISTAR (Bursztynowy LED / Matrix) -->
+		<div class="overflow-x-auto rounded-xl border-2 border-amber-500 bg-black p-4 text-xs font-mono text-amber-400 shadow-2xl">
+			<div class="text-center font-bold text-sm mb-2 uppercase tracking-widest text-amber-300">
+				TABLICA ODJAZDÓW • {stopName}
 			</div>
 
 			{#if lines && lines.length > 0}
@@ -370,12 +355,12 @@
 					{/if}
 				</div>
 				<div>
-					Aktualizacja TRISTAR: {lastUpdate}
+					Aktualizacja: {lastUpdate}
 				</div>
 			</div>
 		</div>
 	{:else}
-		<!-- NOWOCZESNY WIDOK TABLICY TRISTAR (Sleek Dark Glass & Amber LED) -->
+		<!-- NOWOCZESNY WIDOK TABLICY ODJAZDÓW (Sleek Dark Glass & Amber LED) -->
 		<div class="rounded-3xl tristar-board border border-slate-800/90 overflow-hidden shadow-2xl transition-opacity duration-200 {loading ? 'opacity-90' : 'opacity-100'}">
 			<!-- Belka nagłówkowa tablicy -->
 			<div class="px-5 py-4 border-b border-slate-800/80 bg-slate-900/70 flex flex-wrap items-center justify-between gap-3">
@@ -432,7 +417,7 @@
 
 					<button
 						onclick={() => (showAllServedLines = !showAllServedLines)}
-						class="text-[11px] font-semibold text-slate-400 hover:text-amber-400 flex items-center gap-1 transition shrink-0 ml-auto"
+						class="text-[11px] font-semibold text-slate-400 hover:text-amber-400 flex items-center gap-1 transition shrink-0 ml-auto cursor-pointer"
 					>
 						<span>{showAllServedLines ? 'Zwiń kierunki' : 'Wszystkie kierunki'}</span>
 						<span class="text-[9px]">{showAllServedLines ? '▲' : '▼'}</span>
@@ -503,9 +488,9 @@
 								</div>
 
 								<div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
-									<span>Plan: <strong class="text-slate-300 font-semibold">{row.theoreticalTime}</strong></span>
+									<span>Rozkład: <strong class="text-slate-300 font-semibold">{row.theoreticalTime}</strong></span>
 									<span class="text-slate-600">•</span>
-									<span>Szac.: <strong class="text-slate-300 font-semibold">{row.estimatedTime}</strong></span>
+									<span>Oczekiwany: <strong class="text-slate-300 font-semibold">{row.estimatedTime}</strong></span>
 
 									{#if row.vehicleCode}
 										<span class="text-slate-600">•</span>
@@ -513,60 +498,56 @@
 											href="https://zkmgdynia.pl/pojazdy/search?action%5B0%5D=search&nr_inventory={row.vehicleCode}&typ=&brand_id=&model_id=&carrier_id="
 											target="_blank"
 											class="inline-flex items-center gap-1 font-mono text-[11px] text-amber-400/90 hover:text-amber-300 hover:underline bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800"
-											title="Pojazd #{row.vehicleCode} {row.vehicleDetails?.marka || ''} {row.vehicleDetails?.model || ''}"
+											title="Pojazd nr {row.vehicleCode} {row.vehicleDetails?.marka || ''} {row.vehicleDetails?.model || ''}"
 										>
-											#{row.vehicleCode}
+											Nr {row.vehicleCode}
 											{#if row.vehicleDetails?.marka}
 												<span class="text-slate-400 text-[10px]">({row.vehicleDetails.marka} {row.vehicleDetails.model || ''})</span>
 											{/if}
 										</a>
-									{/if}
 
-									{#if row.vehicleDetails?.klima}
-										<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 text-[10px] font-semibold border border-cyan-500/20" title="Pojazd wyposażony w klimatyzację">
-											Klima
-										</span>
-									{/if}
-									{#if row.vehicleDetails?.usb}
-										<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20" title="Ładowarki USB w pojeździe">
-											<Zap class="w-2.5 h-2.5" /> USB
-										</span>
+										{#if row.vehicleDetails?.usb}
+											<img src="/USB.png" alt="USB" class="inline-block w-3.5 h-3.5 align-middle" title="Ładowarki USB w pojeździe" />
+										{/if}
+										{#if row.vehicleDetails?.klima}
+											<img src="/Klima.png" alt="Klima" class="inline-block w-3.5 h-3.5 align-middle" title="Pojazd klimatyzowany" />
+										{/if}
 									{/if}
 								</div>
 							</div>
 						</div>
 
-						<!-- Prawa strona: Czas do odjazdu i Badge opóźnienia -->
-						<div class="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800/60">
+						<!-- Prawa strona: Odliczanie i badge punktualności -->
+						<div class="flex items-center justify-between sm:justify-end gap-3 sm:gap-5 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800/60">
 							<!-- Status opóźnienia -->
-							<div class="text-right">
+							<div class="text-left sm:text-right">
 								{#if row.statusType === 'on-time'}
-									<div class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-										<CheckCircle2 class="w-3 h-3" />
-										Punktualnie
+									<div class="flex items-center sm:justify-end gap-1.5 text-xs font-bold text-emerald-400">
+										<CheckCircle class="w-3.5 h-3.5" />
+										<span>Punktualnie</span>
 									</div>
 								{:else if row.statusType === 'early'}
-									<div class="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">
-										<Clock class="w-3 h-3" />
-										Przyspieszony {row.statusText}
+									<div class="flex items-center sm:justify-end gap-1.5 text-xs font-bold text-sky-400">
+										<Clock class="w-3.5 h-3.5" />
+										<span>{row.statusText}</span>
 									</div>
 								{:else}
-									<div class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-										<AlertTriangle class="w-3 h-3" />
-										Opóźniony {row.statusText}
+									<div class="flex items-center sm:justify-end gap-1.5 text-xs font-bold text-rose-400">
+										<AlertTriangle class="w-3.5 h-3.5" />
+										<span>{row.statusText}</span>
 									</div>
 								{/if}
 							</div>
 
-							<!-- Główny licznik czasu na żywo -->
-							<div class="text-right min-w-[110px]">
+							<!-- Odliczanie (Live countdown) -->
+							<div class="text-right shrink-0 min-w-[90px]">
 								{#if countdown.isDeparting}
-									<div class="font-mono-board text-rose-500 font-extrabold text-base sm:text-lg animate-departing flex items-center justify-end gap-1">
-										<span>ODJEŻDŻA</span>
-										<span class="tracking-tighter">&gt;&gt;&gt;</span>
+									<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500 text-slate-950 font-black text-xs sm:text-sm animate-pulse shadow-lg shadow-rose-500/20">
+										<span class="tracking-widest">&gt;&gt;&gt;&gt;</span>
+										<span>Odjeżdża</span>
 									</div>
 								{:else}
-									<div class="font-mono-board font-black text-lg sm:text-xl text-amber-400 amber-glow">
+									<div class="text-base sm:text-xl font-mono font-black text-amber-400 tracking-tight">
 										{countdown.text}
 									</div>
 								{/if}

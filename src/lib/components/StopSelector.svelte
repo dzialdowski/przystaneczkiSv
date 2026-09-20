@@ -75,10 +75,10 @@
 				type="button"
 				onclick={onOpenGps}
 				class="absolute inset-y-0 right-0 pr-3.5 flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold text-xs transition cursor-pointer"
-				title="Pobierz koordynaty GPS i znajdź najbliższe przystanki"
+				title="Znajdź najbliższe przystanki w okolicy"
 			>
 				<Navigation class="w-4 h-4" />
-				<span class="hidden sm:inline text-[11px]">W pobliżu (GPS)</span>
+				<span class="hidden sm:inline text-[11px]">W pobliżu</span>
 			</button>
 		{/if}
 
@@ -88,12 +88,12 @@
 				{#if isSearching}
 					<div class="p-4 text-center text-xs text-slate-400">Szukanie przystanków...</div>
 				{:else if searchResults.length === 0}
-					<div class="p-4 text-center text-xs text-slate-400">Nie znaleziono przystanków pasujących do frazy.</div>
+					<div class="p-4 text-center text-xs text-slate-400">Nie znaleziono pasujących przystanków.</div>
 				{:else}
 					{#each searchResults as item}
 						<button
 							onclick={() => handleSelect(String(item.stopId), item.stopName)}
-							class="w-full px-4 py-3 text-left flex flex-col gap-1.5 hover:bg-amber-500/10 transition group"
+							class="w-full px-4 py-3 text-left flex flex-col gap-1.5 hover:bg-amber-500/10 transition group cursor-pointer"
 						>
 							<div class="flex items-center justify-between gap-2">
 								<div class="flex items-center gap-2.5 min-w-0">
@@ -148,7 +148,7 @@
 				}}
 				class="w-full py-2.5 px-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-amber-500 transition appearance-none cursor-pointer"
 			>
-				<option value="" disabled>-- WYBIERZ PRZYSTANEK Z LISTY --</option>
+				<option value="" disabled>-- Wybierz przystanek z listy --</option>
 
 				{#if favorites && favorites.length > 0}
 					<optgroup label="⭐ Moje ulubione przystanki">
@@ -182,13 +182,13 @@
 						class="px-2.5 py-1 rounded-xl shrink-0 font-bold transition border text-[11px] bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300 flex items-center gap-1 shadow-sm cursor-pointer"
 					>
 						<Navigation class="w-3 h-3" />
-						<span>GPS w pobliżu</span>
+						<span>W pobliżu</span>
 					</button>
 				{/if}
 				{#each favorites as fav}
 					<button
 						onclick={() => onSelect(fav.stop_id, fav.stop_name)}
-						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] {selectedStopId === fav.stop_id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
+						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] cursor-pointer {selectedStopId === fav.stop_id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
 					>
 						{fav.stop_name}
 					</button>
@@ -206,13 +206,13 @@
 						class="px-2.5 py-1 rounded-xl shrink-0 font-bold transition border text-[11px] bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300 flex items-center gap-1 shadow-sm cursor-pointer"
 					>
 						<Navigation class="w-3 h-3" />
-						<span>GPS w pobliżu</span>
+						<span>W pobliżu</span>
 					</button>
 				{/if}
 				{#each DEMO_STOPS.slice(0, 6) as s}
 					<button
 						onclick={() => onSelect(s.id, s.name)}
-						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] {selectedStopId === s.id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
+						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] cursor-pointer {selectedStopId === s.id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
 					>
 						{s.name}
 					</button>

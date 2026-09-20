@@ -72,7 +72,7 @@
 					});
 				} catch (fetchErr: any) {
 					console.error('Błąd pobierania najbliższych przystanków:', fetchErr);
-					error = 'Nie udało się pobrać listy przystanków z serwera. Spróbuj ponownie.';
+					error = 'Nie udało się pobrać listy przystanków. Spróbuj ponownie.';
 				} finally {
 					isLoading = false;
 				}
@@ -83,14 +83,14 @@
 				switch (geoErr.code) {
 					case geoErr.PERMISSION_DENIED:
 						error =
-							'Brak dostępu do lokalizacji GPS. Zezwól na dostęp do lokalizacji w ustawieniach przeglądarki.';
+							'Brak dostępu do lokalizacji. Zezwól na dostęp w ustawieniach przeglądarki.';
 						break;
 					case geoErr.POSITION_UNAVAILABLE:
 						error =
-							'Twoja pozycja GPS jest chwilowo niedostępna. Upewnij się, że masz włączoną lokalizację w urządzeniu.';
+							'Twoja lokalizacja jest chwilowo niedostępna. Upewnij się, że masz włączoną lokalizację w urządzeniu.';
 						break;
 					case geoErr.TIMEOUT:
-						error = 'Upłynął limit czasu oczekiwania na pozycję GPS. Spróbuj ponownie.';
+						error = 'Upłynął czas oczekiwania na ustalenie pozycji. Spróbuj ponownie.';
 						break;
 					default:
 						error = `Błąd lokalizacji: ${geoErr.message || 'Nieznany błąd'}`;
@@ -118,7 +118,7 @@
 <div
 	class="bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4 transition-all"
 >
-	<!-- Nagłówek sekcji GPS -->
+	<!-- Nagłówek sekcji -->
 	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800/80">
 		<div class="flex items-center gap-2.5">
 			<div class="p-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
@@ -127,27 +127,24 @@
 			<div>
 				<div class="flex items-center gap-2">
 					<h3 class="text-base sm:text-lg font-black text-white flex items-center gap-1.5">
-						Najbliższe przystanki GPS
+						Najbliższe przystanki
 					</h3>
 					<span
 						class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
 					>
-						Na żywo
+						W pobliżu
 					</span>
 				</div>
 				<p class="text-xs text-slate-400">
 					{#if userCoords}
-						Współrzędne: {userCoords.lat.toFixed(4)}°N, {userCoords.lon.toFixed(4)}°E
-						{#if userCoords.accuracy}
-							(dokładność ~{userCoords.accuracy} m)
-						{/if}
+						Wyszukano według Twojego położenia
 						{#if lastFetchedAt}
-							• zaktualizowano o {lastFetchedAt}
+							• odświeżono o {lastFetchedAt}
 						{/if}
 					{:else if isLoading}
-						Ustalanie współrzędnych i obliczanie odległości w metrach...
+						Szukanie przystanków w Twojej okolicy...
 					{:else}
-						Wyszukaj przystanki w promieniu Twojej obecnej lokalizacji
+						Przystanki w Twojej okolicy
 					{/if}
 				</p>
 			</div>
@@ -158,10 +155,10 @@
 				onclick={requestLocation}
 				disabled={isLoading}
 				class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold border border-slate-700 hover:border-slate-600 transition shadow-sm cursor-pointer"
-				title="Pobierz ponownie współrzędne GPS i odśwież odległości"
+				title="Odśwież listę przystanków"
 			>
 				<RefreshCw class="w-3.5 h-3.5 {isLoading ? 'animate-spin text-emerald-400' : ''}" />
-				<span>{isLoading ? 'Szukanie...' : 'Odśwież GPS'}</span>
+				<span>{isLoading ? 'Szukanie...' : 'Odśwież'}</span>
 			</button>
 
 			{#if onClose}
@@ -188,7 +185,7 @@
 					onclick={requestLocation}
 					class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 font-bold transition text-xs cursor-pointer"
 				>
-					Spróbuj ponownie pobrać pozycję
+					Spróbuj ponownie
 				</button>
 			</div>
 		</div>
@@ -201,9 +198,9 @@
 				<Navigation class="w-8 h-8 text-emerald-400 animate-spin" />
 			</div>
 			<div class="space-y-1">
-				<h4 class="text-sm font-bold text-white">Ustalanie pozycji i wyszukiwanie przystanków...</h4>
+				<h4 class="text-sm font-bold text-white">Wyszukiwanie najbliższych przystanków...</h4>
 				<p class="text-xs text-slate-400 max-w-sm mx-auto">
-					Pobieramy Twoje koordynaty z GPS oraz kalkulujemy odległości w metrach do każdego słupka ZKM Gdynia.
+					Sprawdzamy odległość do przystanków w okolicy.
 				</p>
 			</div>
 		</div>
@@ -213,8 +210,8 @@
 	{#if stops.length > 0}
 		<div class="space-y-2.5">
 			<div class="flex items-center justify-between text-xs text-slate-400 px-1">
-				<span>Znaleziono {stops.length} najbliższych przystanków (uszeregowane od najbliższego):</span>
-				<span class="text-[11px] font-semibold text-emerald-400">Kliknij przystanek, by załadować odjazdy</span>
+				<span>Najbliższe przystanki w okolicy:</span>
+				<span class="text-[11px] font-semibold text-emerald-400">Kliknij przystanek, by zobaczyć odjazdy</span>
 			</div>
 
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -266,7 +263,7 @@
 												class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30"
 											>
 												<CheckCircle2 class="w-3 h-3" />
-												Aktywny
+												Wybrany
 											</span>
 										{/if}
 									</div>
@@ -275,7 +272,6 @@
 										{#if stop.stopCode}
 											<span>• Słupek {stop.stopCode}</span>
 										{/if}
-										<span class="text-slate-600">• ID: {stop.stopId}</span>
 									</div>
 								</div>
 							</div>
@@ -288,7 +284,7 @@
 										: stop.distance < 600
 											? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
 											: 'bg-slate-800 border border-slate-700 text-slate-300'}"
-									title="Odległość od Twojej pozycji GPS w linii prostej"
+									title="Odległość od Ciebie"
 								>
 									<Navigation class="w-3.5 h-3.5 shrink-0" />
 									<span>{formatDistance(stop.distance)}</span>
@@ -301,13 +297,8 @@
 							<div class="flex items-center justify-between text-[11px]">
 								<span class="font-bold text-slate-300 flex items-center gap-1">
 									<Sparkles class="w-3 h-3 text-amber-400" />
-									Top 3 najczęstsze linie i kierunki:
+									Główne linie i kierunki:
 								</span>
-								{#if stop.lines && stop.lines.length > 3}
-									<span class="text-[10px] text-slate-500">
-										(z {stop.lines.length} linii łącznie)
-									</span>
-								{/if}
 							</div>
 
 							{#if topLines && topLines.length > 0}
@@ -337,33 +328,24 @@
 													<span class="text-[10px] text-slate-500">Brak określonego kierunku</span>
 												{/if}
 											</div>
-
-											{#if typeof lineInfo.tripCount === 'number' && lineInfo.tripCount > 0}
-												<span
-													class="text-[10px] font-semibold text-slate-400 bg-slate-950/60 px-1.5 py-0.5 rounded border border-slate-800/60 shrink-0"
-													title="Liczba zaplanowanych kursów w rozkładzie jazdy"
-												>
-													~{lineInfo.tripCount} kursów
-												</span>
-											{/if}
 										</div>
 									{/each}
 								</div>
 							{:else}
 								<div class="text-[11px] text-slate-500 italic py-1">
-									Brak aktywnych linii w rozkładzie dla tego słupka
+									Brak aktywnych linii w rozkładzie
 								</div>
 							{/if}
 						</div>
 
-						<!-- Stopka karty: Szybka akcja i dedykowany link -->
+						<!-- Stopka karty: Szybka akcja i link do szczegółów -->
 						<div class="flex items-center justify-between pt-1 text-xs">
 							<div
 								class="flex items-center gap-1 font-bold text-xs {isCurrent
 									? 'text-amber-400'
 									: 'text-emerald-400 group-hover:text-emerald-300'}"
 							>
-								<span>{isCurrent ? 'Wyświetlany na tablicy' : 'Wybierz ten przystanek'}</span>
+								<span>{isCurrent ? 'Aktualnie wyświetlany' : 'Pokaż odjazdy'}</span>
 								<ArrowRight class="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
 							</div>
 
@@ -371,9 +353,9 @@
 								href="/przystanek/{stop.stopId}"
 								onclick={(e) => e.stopPropagation()}
 								class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition"
-								title="Otwórz pełną stronę słupka"
+								title="Zobacz pełny rozkład jazdy"
 							>
-								<span>Strona słupka</span>
+								<span>Szczegóły</span>
 								<ExternalLink class="w-3 h-3" />
 							</a>
 						</div>
@@ -383,7 +365,7 @@
 		</div>
 	{:else if hasRequested && !isLoading && !error}
 		<div class="py-6 text-center text-xs text-slate-400">
-			Nie znaleziono przystanków w pobliżu podanych współrzędnych.
+			Nie znaleziono przystanków w Twojej okolicy.
 		</div>
 	{/if}
 </div>
