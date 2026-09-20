@@ -131,7 +131,7 @@
 
 		// Przypadek 1: Wszystkie przystanki zostały już obsłużone (kurs dojechał do pętli)
 		if (nextIdx === -1) {
-			const lastStop = validStops[validStops.length - 1];
+			const lastStop = validStops[lastStopIdx(validStops)];
 			return {
 				lat: lastStop.lat,
 				lon: lastStop.lon,
@@ -143,6 +143,10 @@
 				prevStop: lastStop,
 				progressPercent: 100
 			};
+		}
+
+		function lastStopIdx(arr: any[]) {
+			return arr.length - 1;
 		}
 
 		// Przypadek 2: Pierwszy przystanek ma diff >= 0 (autobus jeszcze nie wystartował)
@@ -237,7 +241,7 @@
 		const delayInfo = formatDelay(delaySeconds);
 		const vCode = vehicleCode || vehicleDetails?.bus;
 		return `
-			<div style="font-family: Outfit, sans-serif; min-width: 210px; color: #f8fafc; padding: 4px;">
+			<div style="font-family: Outfit, sans-serif; min-width: 220px; color: #f8fafc; padding: 2px;">
 				<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 6px;">
 					<div style="display: flex; align-items: center; gap: 6px;">
 						<span style="background: #f59e0b; color: #020617; font-weight: 900; font-size: 13px; padding: 2px 8px; border-radius: 6px; font-family: monospace;">
@@ -260,30 +264,30 @@
 
 				${
 					vehicleDetails?.marka
-						? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">
-							<strong style="color: #cbd5e1;">Model:</strong> ${vehicleDetails.marka} ${vehicleDetails.model || ''}
+						? `<div style="font-size: 11px; margin-bottom: 6px;">
+							<strong style="color: #94a3b8;">Model:</strong> <span style="color: #f1f5f9; font-weight: 600;">${vehicleDetails.marka} ${vehicleDetails.model || ''}</span>
 						</div>`
 						: ''
 				}
 
 				${
 					routeDescription
-						? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">
-							<strong style="color: #cbd5e1;">Kierunek:</strong> ${routeDescription}
+						? `<div style="font-size: 11px; margin-bottom: 6px;">
+							<strong style="color: #94a3b8;">Kierunek:</strong> <span style="color: #f1f5f9; font-weight: 600;">${routeDescription}</span>
 						</div>`
 						: ''
 				}
 
-				<div style="margin-top: 6px; padding: 8px; border-radius: 8px; background: rgba(15,23,42,0.8); border: 1px solid #1e293b;">
-					<div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 2px;">
+				<div style="margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #1e293b; border: 1px solid #334155;">
+					<div style="font-size: 11px; font-weight: 800; color: #fbbf24; margin-bottom: 2px;">
 						${busLocation?.statusText || 'Trwa kursowanie'}
 					</div>
-					<div style="font-size: 11px; color: #94a3b8;">
+					<div style="font-size: 11px; color: #cbd5e1;">
 						${busLocation?.subText || ''}
 					</div>
 				</div>
 
-				<div style="font-size: 9px; color: #64748b; margin-top: 8px; text-align: center;">
+				<div style="font-size: 9px; color: #94a3b8; margin-top: 8px; text-align: center;">
 					Szacowana pozycja wg rozkładu i opóźnień TRISTAR
 				</div>
 			</div>
@@ -292,19 +296,19 @@
 
 	function createStopPopupHtml(stop: RouteStop) {
 		return `
-			<div style="font-family: Outfit, sans-serif; min-width: 190px; color: #f8fafc; padding: 4px;">
-				<div style="font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; margin-bottom: 3px;">
+			<div style="font-family: Outfit, sans-serif; min-width: 190px; color: #f8fafc; padding: 2px;">
+				<div style="font-weight: 800; font-size: 14px; line-height: 1.2; color: #ffffff; margin-bottom: 4px;">
 					${stop.stopName}
 				</div>
 				${stop.zone ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Strefa: ${stop.zone}</div>` : `<div style="margin-bottom: 8px;"></div>`}
 
-				<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; background: rgba(15,23,42,0.7); padding: 6px 8px; border-radius: 8px; border: 1px solid #334155;">
+				<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; background: #1e293b; padding: 6px 10px; border-radius: 8px; border: 1px solid #334155;">
 					<span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; ${
 						stop.isNext
 							? 'background: rgba(245,158,11,0.25); color: #fbbf24; border: 1px solid #f59e0b;'
 							: stop.isPassed
 								? 'background: rgba(71,85,105,0.4); color: #94a3b8;'
-								: 'background: rgba(30,41,59,0.8); color: #cbd5e1;'
+								: 'background: rgba(51,65,85,0.6); color: #cbd5e1;'
 					}">
 						${stop.isNext ? 'Następny' : stop.isPassed ? 'Odjechał' : 'Planowany'}
 					</span>
@@ -314,7 +318,7 @@
 					</span>
 				</div>
 
-				<a href="/przystanek/${stop.stopId}" style="display: block; text-align: center; background: #f59e0b; color: #020617; font-weight: 800; font-size: 11px; padding: 6px 10px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+				<a href="/przystanek/${stop.stopId}" style="display: block; text-align: center; background: #f59e0b; color: #020617; font-weight: 800; font-size: 11px; padding: 7px 10px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: background 0.15s;">
 					Odjazdy z tego przystanku ➔
 				</a>
 			</div>
@@ -615,3 +619,41 @@
 		class="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-800 relative z-10 shadow-inner"
 	></div>
 </div>
+
+<style>
+	:global(.custom-route-stop-marker),
+	:global(.custom-route-bus-marker) {
+		background: transparent !important;
+		border: none !important;
+	}
+
+	:global(.route-map-popup .leaflet-popup-content-wrapper) {
+		background: #0f172a !important;
+		color: #f8fafc !important;
+		border-radius: 16px !important;
+		border: 1px solid #334155 !important;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+		padding: 4px !important;
+	}
+
+	:global(.route-map-popup .leaflet-popup-tip) {
+		background: #0f172a !important;
+		border: 1px solid #334155 !important;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+	}
+
+	:global(.route-map-popup .leaflet-popup-close-button) {
+		color: #94a3b8 !important;
+		padding: 8px 8px 0 0 !important;
+		font-size: 16px !important;
+	}
+
+	:global(.route-map-popup .leaflet-popup-close-button:hover) {
+		color: #ffffff !important;
+	}
+
+	:global(.route-map-popup .leaflet-popup-content) {
+		margin: 8px 10px !important;
+		line-height: 1.4 !important;
+	}
+</style>

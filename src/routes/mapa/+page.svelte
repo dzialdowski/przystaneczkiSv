@@ -83,7 +83,9 @@
 							</div>
 						`;
 
-						marker.bindPopup(popupContent);
+						marker.bindPopup(popupContent, {
+							className: 'stop-map-popup'
+						});
 					}
 				});
 			}
@@ -203,13 +205,13 @@
 		background: transparent;
 		border: none;
 	}
-	:global(.leaflet-popup-content-wrapper) {
+	:global(.stop-map-popup .leaflet-popup-content-wrapper) {
 		background: #ffffff !important;
 		border-radius: 14px !important;
 		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
 		border: 1px solid #e2e8f0 !important;
 	}
-	:global(.leaflet-popup-tip) {
+	:global(.stop-map-popup .leaflet-popup-tip) {
 		background: #ffffff !important;
 	}
 </style>
