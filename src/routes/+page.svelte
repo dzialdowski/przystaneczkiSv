@@ -240,11 +240,6 @@
 				<div class="pt-2">
 					<NearestStops
 						bind:this={nearestStopsComponent}
-						{selectedStopId}
-						onSelectStop={(id, name) => {
-							handleSelectStop(id, name);
-							showToast(`Wybrano przystanek: ${name}`);
-						}}
 						onClose={() => { showNearestStops = false; }}
 					/>
 				</div>

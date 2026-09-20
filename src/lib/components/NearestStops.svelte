@@ -8,15 +8,13 @@
 		AlertCircle,
 		X,
 		ArrowRight,
-		ExternalLink,
-		CheckCircle2,
 		Sparkles
 	} from 'lucide-svelte';
 	import type { TristarStop } from '$lib/server/tristar';
 
 	interface Props {
 		selectedStopId?: string;
-		onSelectStop: (stopId: string, stopName: string) => void;
+		onSelectStop?: (stopId: string, stopName: string) => void;
 		onClose?: () => void;
 		autoRequest?: boolean;
 	}
@@ -102,10 +100,6 @@
 				maximumAge: 30000
 			}
 		);
-	}
-
-	function handleStopClick(stop: TristarStop) {
-		onSelectStop(String(stop.stopId), stop.stopName);
 	}
 
 	onMount(() => {
@@ -211,12 +205,11 @@
 		<div class="space-y-2.5">
 			<div class="flex items-center justify-between text-xs text-slate-400 px-1">
 				<span>Najbliższe przystanki w okolicy:</span>
-				<span class="text-[11px] font-semibold text-emerald-400">Kliknij przystanek, by zobaczyć odjazdy</span>
+				<span class="text-[11px] font-semibold text-emerald-400">Kliknij przystanek, by otworzyć tablicę</span>
 			</div>
 
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
 				{#each stops as stop (stop.stopId)}
-					{@const isCurrent = String(stop.stopId).trim() === String(selectedStopId).trim()}
 					{@const topLines =
 						stop.topLines && stop.topLines.length > 0
 							? stop.topLines
@@ -224,51 +217,30 @@
 									.sort((a, b) => (b.tripCount ?? 0) - (a.tripCount ?? 0))
 									.slice(0, 3)}
 
-					<div
-						role="button"
-						tabindex="0"
-						onclick={() => handleStopClick(stop)}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								handleStopClick(stop);
-							}
-						}}
-						class="group relative text-left p-4 rounded-2xl transition-all border flex flex-col justify-between gap-3 cursor-pointer shadow-lg {isCurrent
-							? 'bg-amber-500/10 border-amber-500/60 ring-1 ring-amber-500/30'
-							: 'bg-slate-950/70 border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/90'}"
+					<a
+						href="/przystanek/{stop.stopId}"
+						class="group relative text-left p-4 rounded-2xl transition-all border flex flex-col justify-between gap-3 cursor-pointer shadow-lg bg-slate-950/70 border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900/90 hover:scale-[1.01]"
 					>
 						<!-- Górny wiersz: Nazwa, słupek i badge odległości w metrach -->
 						<div class="flex items-start justify-between gap-2.5">
 							<div class="flex items-start gap-3 min-w-0">
 								<div
-									class="p-2.5 rounded-xl shrink-0 transition {isCurrent
-										? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-										: 'bg-slate-800/80 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-slate-950'}"
+									class="p-2.5 rounded-xl shrink-0 transition bg-slate-800/80 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-slate-950"
 								>
 									<Bus class="w-4 h-4" />
 								</div>
 								<div class="min-w-0">
-									<div class="flex items-center gap-1.5 flex-wrap">
-										<h4
-											class="font-black text-sm transition {isCurrent
-												? 'text-amber-300'
-												: 'text-white group-hover:text-emerald-300'} truncate"
-											title={stop.stopName}
-										>
-											{stop.stopName}
-										</h4>
-										{#if isCurrent}
-											<span
-												class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30"
-											>
-												<CheckCircle2 class="w-3 h-3" />
-												Wybrany
-											</span>
-										{/if}
-									</div>
+									<h4
+										class="font-black text-sm transition text-white group-hover:text-emerald-300 truncate"
+										title={stop.stopName}
+									>
+										{stop.stopName}
+									</h4>
 									<div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
 										<span>{stop.zoneId || 'Gdynia'}</span>
+										{#if stop.stopCode}
+											<span>• Słupek {stop.stopCode}</span>
+										{/if}
 									</div>
 								</div>
 							</div>
@@ -335,28 +307,17 @@
 							{/if}
 						</div>
 
-						<!-- Stopka karty: Szybka akcja i link do szczegółów -->
-						<div class="flex items-center justify-between pt-1 text-xs">
+						<!-- Stopka karty: Bezpośrednie przejście do tablicy odjazdów -->
+						<div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+							<span class="text-slate-400 text-[11px]">Odjazdy na żywo</span>
 							<div
-								class="flex items-center gap-1 font-bold text-xs {isCurrent
-									? 'text-amber-400'
-									: 'text-emerald-400 group-hover:text-emerald-300'}"
+								class="flex items-center gap-1 font-bold text-xs text-emerald-400 group-hover:text-emerald-300 group-hover:translate-x-0.5 transition"
 							>
-								<span>{isCurrent ? 'Aktualnie wyświetlany' : 'Pokaż odjazdy'}</span>
-								<ArrowRight class="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+								<span>Otwórz przystanek</span>
+								<ArrowRight class="w-3.5 h-3.5" />
 							</div>
-
-							<a
-								href="/przystanek/{stop.stopId}"
-								onclick={(e) => e.stopPropagation()}
-								class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition"
-								title="Zobacz pełny rozkład jazdy"
-							>
-								<span>Szczegóły</span>
-								<ExternalLink class="w-3 h-3" />
-							</a>
 						</div>
-					</div>
+					</a>
 				{/each}
 			</div>
 		</div>
