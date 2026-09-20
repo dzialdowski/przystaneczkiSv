@@ -269,9 +269,6 @@
 									</div>
 									<div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
 										<span>{stop.zoneId || 'Gdynia'}</span>
-										{#if stop.stopCode}
-											<span>• Słupek {stop.stopCode}</span>
-										{/if}
 									</div>
 								</div>
 							</div>
