@@ -2,10 +2,11 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import type { Snapshot } from './$types';
-	import { Star, MapPin, RefreshCw, Bus, Share2, Sparkles } from 'lucide-svelte';
+	import { Star, MapPin, RefreshCw, Bus, Share2, Sparkles, Navigation } from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import DepartureBoard from '$lib/components/DepartureBoard.svelte';
 	import StopSelector from '$lib/components/StopSelector.svelte';
+	import NearestStops from '$lib/components/NearestStops.svelte';
 	import MessageTicker from '$lib/components/MessageTicker.svelte';
 	import type { DelaysResponse } from '$lib/server/tristar';
 	import type { FavoriteStop } from '$lib/server/db';
@@ -41,6 +42,10 @@
 	let autoRefreshTimer: any;
 	let toastMessage = $state<string | null>(null);
 	let restoredFromSnapshot = false;
+
+	// Stan widoczności sekcji najbliższych przystanków GPS
+	let showNearestStops = $state(false);
+	let nearestStopsComponent = $state<any>(null);
 
 	// SvelteKit snapshot do zapamiętywania stanu przed nawigacją i odtwarzania go po powrocie
 	export const snapshot: Snapshot<PageSnapshot> = {
@@ -85,6 +90,20 @@
 		selectedStopId = String(id);
 		currentStopName = name.replace(/^[⭐📍]\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
 		loadDelays(selectedStopId);
+	}
+
+	function handleToggleGps() {
+		showNearestStops = !showNearestStops;
+		if (showNearestStops && nearestStopsComponent) {
+			nearestStopsComponent.requestLocation();
+		}
+	}
+
+	function handleOpenGps() {
+		showNearestStops = true;
+		if (nearestStopsComponent) {
+			nearestStopsComponent.requestLocation();
+		}
 	}
 
 	async function toggleFavorite() {
@@ -191,10 +210,20 @@
 				</div>
 
 				<!-- Przyciski akcji dla wybranego przystanku -->
-				<div class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-2">
+					<!-- Przycisk GPS dla najbliższych przystanków -->
+					<button
+						onclick={handleToggleGps}
+						class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer shadow-sm {showNearestStops ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20' : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 hover:text-white'}"
+						title="Wyszukaj najbliższe przystanki na podstawie Twojej pozycji GPS"
+					>
+						<Navigation class="w-3.5 h-3.5 {showNearestStops ? 'fill-slate-950' : ''}" />
+						<span>{showNearestStops ? 'Zwiń GPS' : 'Najbliższe (GPS)'}</span>
+					</button>
+
 					<button
 						onclick={toggleFavorite}
-						class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition {isFavorite ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}"
+						class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer {isFavorite ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-sm shadow-amber-500/20' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}"
 					>
 						<Star class="w-3.5 h-3.5 {isFavorite ? 'fill-slate-950' : ''}" />
 						<span>{isFavorite ? 'Ulubiony' : 'Dodaj do ulubionych'}</span>
@@ -214,7 +243,23 @@
 				{selectedStopId}
 				{favorites}
 				onSelect={handleSelectStop}
+				onOpenGps={handleOpenGps}
 			/>
+
+			<!-- Sekcja najbliższych przystanków GPS -->
+			{#if showNearestStops}
+				<div class="pt-2">
+					<NearestStops
+						bind:this={nearestStopsComponent}
+						{selectedStopId}
+						onSelectStop={(id, name) => {
+							handleSelectStop(id, name);
+							showToast(`Wybrano przystanek: ${name}`);
+						}}
+						onClose={() => { showNearestStops = false; }}
+					/>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Główna tablica odjazdów -->
@@ -252,24 +297,23 @@
 				</div>
 				<div>
 					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Moje przystanki</h3>
-					<p class="text-[11px] text-slate-400">Zarządzaj listą swoich ulubionych przystanków</p>
+					<p class="text-[11px] text-slate-400">Zarządzaj swoimi ulubionymi i zsynchronizuj z kontem</p>
 				</div>
 			</a>
 
-			<button
-				onclick={handleToggleLegacy}
-				class="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-amber-500/40 hover:bg-slate-900/80 transition flex items-center gap-3 text-left group"
+			<a
+				href="/api/sync-gtfs"
+				target="_blank"
+				class="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900/80 transition flex items-center gap-3 group"
 			>
-				<div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 group-hover:scale-105 transition">
-					<Sparkles class="w-5 h-5" />
+				<div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition">
+					<RefreshCw class="w-5 h-5" />
 				</div>
 				<div>
-					<h3 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Tryb stylizacji tablicy</h3>
-					<p class="text-[11px] text-slate-400">
-						Aktualnie: <span class="font-bold text-amber-400">{legacyMode ? 'Klasyczny żółty LED (Bursztyn)' : 'Nowoczesny neonowy (Cyberpunk)'}</span>
-					</p>
+					<h3 class="text-xs font-bold text-white group-hover:text-emerald-400 transition">Status bazy GTFS</h3>
+					<p class="text-[11px] text-slate-400">Sprawdź status synchronizacji bazy Azure SQL</p>
 				</div>
-			</button>
+			</a>
 		</div>
 	</main>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, Star, Bus, MapPin, X, Sparkles } from 'lucide-svelte';
+	import { Search, Star, Bus, MapPin, X, Sparkles, Navigation } from 'lucide-svelte';
 	import type { FavoriteStop } from '$lib/server/db';
 	import type { TristarStop } from '$lib/server/tristar';
 	import { DEMO_STOPS } from '$lib/demoStops';
@@ -8,9 +8,10 @@
 		selectedStopId: string;
 		favorites: FavoriteStop[];
 		onSelect: (stopId: string, stopName: string) => void;
+		onOpenGps?: () => void;
 	}
 
-	let { selectedStopId, favorites, onSelect }: Props = $props();
+	let { selectedStopId, favorites, onSelect, onOpenGps }: Props = $props();
 
 	let searchQuery = $state('');
 	let searchResults = $state<TristarStop[]>([]);
@@ -59,14 +60,25 @@
 			value={searchQuery}
 			oninput={handleSearchInput}
 			placeholder="Wpisz przystanek, linię lub kierunek (np. 21, Dworzec Główny, Sopot)..."
-			class="w-full pl-10 pr-10 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-lg"
+			class="w-full pl-10 pr-28 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-lg"
 		/>
 		{#if searchQuery}
 			<button
 				onclick={() => { searchQuery = ''; searchResults = []; }}
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+				class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white cursor-pointer"
+				title="Wyczyść"
 			>
 				<X class="w-4 h-4" />
+			</button>
+		{:else if onOpenGps}
+			<button
+				type="button"
+				onclick={onOpenGps}
+				class="absolute inset-y-0 right-0 pr-3.5 flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold text-xs transition cursor-pointer"
+				title="Pobierz koordynaty GPS i znajdź najbliższe przystanki"
+			>
+				<Navigation class="w-4 h-4" />
+				<span class="hidden sm:inline text-[11px]">W pobliżu (GPS)</span>
 			</button>
 		{/if}
 
@@ -163,6 +175,16 @@
 				<span class="text-[11px] font-semibold text-amber-400 shrink-0 flex items-center gap-1">
 					<Star class="w-3 h-3 fill-amber-400" /> Szybki wybór:
 				</span>
+				{#if onOpenGps}
+					<button
+						type="button"
+						onclick={onOpenGps}
+						class="px-2.5 py-1 rounded-xl shrink-0 font-bold transition border text-[11px] bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300 flex items-center gap-1 shadow-sm cursor-pointer"
+					>
+						<Navigation class="w-3 h-3" />
+						<span>GPS w pobliżu</span>
+					</button>
+				{/if}
 				{#each favorites as fav}
 					<button
 						onclick={() => onSelect(fav.stop_id, fav.stop_name)}
@@ -174,15 +196,25 @@
 			</div>
 		{:else}
 			<div class="flex items-center gap-1.5 overflow-x-auto py-1 text-xs no-scrollbar">
-				<span class="text-[11px] font-semibold text-amber-400 shrink-0 flex items-center gap-1">
-					<Sparkles class="w-3 h-3 text-amber-400" /> Top węzły:
+				<span class="text-[11px] font-semibold text-slate-400 shrink-0 flex items-center gap-1">
+					<Sparkles class="w-3 h-3 text-amber-400" /> Węzły:
 				</span>
-				{#each DEMO_STOPS.slice(0, 8) as s}
+				{#if onOpenGps}
+					<button
+						type="button"
+						onclick={onOpenGps}
+						class="px-2.5 py-1 rounded-xl shrink-0 font-bold transition border text-[11px] bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300 flex items-center gap-1 shadow-sm cursor-pointer"
+					>
+						<Navigation class="w-3 h-3" />
+						<span>GPS w pobliżu</span>
+					</button>
+				{/if}
+				{#each DEMO_STOPS.slice(0, 6) as s}
 					<button
 						onclick={() => onSelect(s.id, s.name)}
 						class="px-2.5 py-1 rounded-xl shrink-0 font-medium transition border text-[11px] {selectedStopId === s.id ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'}"
 					>
-						{s.name.replace(/\s+\d+.*$/, '')}
+						{s.name}
 					</button>
 				{/each}
 			</div>

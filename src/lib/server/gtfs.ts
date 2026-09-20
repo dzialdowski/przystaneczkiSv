@@ -45,6 +45,7 @@ export interface StopLineInfo {
 	routeId?: number;
 	directions: string[];
 	isTerminus?: boolean;
+	tripCount?: number;
 }
 
 // Pamięć podręczna w procesie dla szybkiego dostępu
@@ -92,7 +93,10 @@ export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopL
 		return new Map();
 	}
 
-	const stopMap = new Map<number, Map<string, { routeId?: number; departures: Set<string>; arrivals: Set<string> }>>();
+	const stopMap = new Map<
+		number,
+		Map<string, { routeId?: number; departures: Set<string>; arrivals: Set<string>; tripCount: number }>
+	>();
 
 	for (const [rId, shapes] of Object.entries(data.routeShapes)) {
 		const numRId = Number(rId);
@@ -115,6 +119,7 @@ export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopL
 			const len = pattern.length;
 			const headsign = cleanHeadsign(shape.headsign);
 			if (!headsign) continue;
+			const shapeTripCount = (shape as any).count || 1;
 
 			for (let i = 0; i < len; i++) {
 				const stopId = pattern[i];
@@ -125,9 +130,10 @@ export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopL
 				const stopLines = stopMap.get(stopId)!;
 
 				if (!stopLines.has(line)) {
-					stopLines.set(line, { routeId: numRId, departures: new Set(), arrivals: new Set() });
+					stopLines.set(line, { routeId: numRId, departures: new Set(), arrivals: new Set(), tripCount: 0 });
 				}
 				const lineData = stopLines.get(line)!;
+				lineData.tripCount += shapeTripCount;
 				if (isTerminus) {
 					lineData.arrivals.add(headsign);
 				} else {
@@ -144,9 +150,9 @@ export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopL
 			const departures = Array.from(d.departures);
 			const arrivals = Array.from(d.arrivals);
 			if (departures.length > 0) {
-				list.push({ line, routeId: d.routeId, directions: departures, isTerminus: false });
+				list.push({ line, routeId: d.routeId, directions: departures, isTerminus: false, tripCount: d.tripCount });
 			} else if (arrivals.length > 0) {
-				list.push({ line, routeId: d.routeId, directions: arrivals, isTerminus: true });
+				list.push({ line, routeId: d.routeId, directions: arrivals, isTerminus: true, tripCount: d.tripCount });
 			}
 		}
 		list.sort((a, b) => {
@@ -170,6 +176,15 @@ export function getStopLinesMap(routesMap?: Map<number, any>): Map<number, StopL
 export function getLinesForStop(stopId: number | string, routesMap?: Map<number, any>): StopLineInfo[] {
 	const map = getStopLinesMap(routesMap);
 	return map.get(Number(stopId)) || [];
+}
+
+/**
+ * Zwraca n najczęściej kursujących linii dla danego przystanku wraz z kierunkami
+ */
+export function getTopLinesForStop(lines: StopLineInfo[], count = 3): StopLineInfo[] {
+	return [...lines]
+		.sort((a, b) => (b.tripCount ?? 0) - (a.tripCount ?? 0))
+		.slice(0, count);
 }
 
 /**

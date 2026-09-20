@@ -1,5 +1,5 @@
 import { getBusDetails, getRouteNameFromDb } from './db';
-import { getLinesForStop, getStopLinesMap, type StopLineInfo } from './gtfs.ts';
+import { getLinesForStop, getStopLinesMap, type StopLineInfo } from './gtfs';
 
 export type { StopLineInfo };
 
@@ -61,6 +61,8 @@ export interface TristarStop {
 	stopLon: number;
 	zoneId: string;
 	lines?: StopLineInfo[];
+	distance?: number;
+	topLines?: StopLineInfo[];
 }
 
 export interface TristarRoute {
