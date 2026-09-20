@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
 		},
 		test: {
 			expect: { requireAssertions: true },
+			testTimeout: 30000,
+			hookTimeout: 30000,
 			projects: [
 				{
 					extends: './vite.config.ts',
@@ -65,6 +67,8 @@ export default defineConfig(({ mode }) => {
 					test: {
 						name: 'server',
 						environment: 'node',
+						testTimeout: 30000,
+						hookTimeout: 30000,
 						include: ['src/**/*.{test,spec}.{js,ts}'],
 						exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
 					}

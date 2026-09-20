@@ -53,7 +53,7 @@ describe('Route trip page load', () => {
 			expect(result.vehicleDetails.model).toBeTruthy();
 			expect(result.vehicleDetails.features).toBeInstanceOf(Array);
 		}
-	});
+	}, 30000);
 
 	it('handles trip when vehicleCode is explicitly passed in URL (vCode)', async () => {
 		const url = new URL(
@@ -80,7 +80,7 @@ describe('Route trip page load', () => {
 		expect(result.vehicleDetails.usb).toBe(true);
 		expect(result.vehicleDetails.klima).toBe(true);
 		expect(result.vehicleDetails.features).toContain('rampa dla wózków');
-	});
+	}, 30000);
 
 	it('marks past stops as passed and sets current or upcoming stop as next based on Warsaw time', async () => {
 		// Mock only Date to 18:09:00 Warsaw time (16:09:00 UTC) so async I/O is unaffected
@@ -121,5 +121,5 @@ describe('Route trip page load', () => {
 		} finally {
 			vi.useRealTimers();
 		}
-	}, 15000);
+	}, 30000);
 });

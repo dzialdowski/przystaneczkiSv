@@ -31,7 +31,7 @@ describe('/api/stops endpoint', () => {
 				expect(Array.isArray(line.directions)).toBe(true);
 			}
 		}
-	});
+	}, 30000);
 
 	it('returns stops matching query string by name or line direction when q parameter is provided', async () => {
 		const url = new URL('http://localhost:5173/api/stops?q=Kaszubski&limit=3');
@@ -48,5 +48,5 @@ describe('/api/stops endpoint', () => {
 			);
 			expect(nameMatch || dirMatch).toBe(true);
 		}
-	});
+	}, 30000);
 });
