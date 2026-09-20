@@ -49,4 +49,30 @@ describe('/api/stops endpoint', () => {
 			expect(nameMatch || dirMatch).toBe(true);
 		}
 	}, 30000);
+
+	it('prioritizes direct stop name matches over distant line direction matches for "Cisowa SKM"', async () => {
+		const url = new URL('http://localhost:5173/api/stops?q=Cisowa SKM&limit=15');
+		const res = await GET({ url } as any);
+		expect(res.status).toBe(200);
+
+		const stops = await res.json();
+		expect(Array.isArray(stops)).toBe(true);
+		expect(stops.length).toBeGreaterThan(0);
+
+		// The top stops must be the actual Cisowa SKM loop / platforms
+		const topStopNames = stops.slice(0, 3).map((s: any) => s.stopName);
+		expect(topStopNames.every((name: string) => name.startsWith('Cisowa SKM'))).toBe(true);
+	}, 30000);
+
+	it('handles queries without Polish diacritics', async () => {
+		const url = new URL('http://localhost:5173/api/stops?q=glowna&limit=5');
+		const res = await GET({ url } as any);
+		expect(res.status).toBe(200);
+
+		const stops = await res.json();
+		expect(Array.isArray(stops)).toBe(true);
+		expect(stops.length).toBeGreaterThan(0);
+		// Should match "Gdynia Dworzec Główny" or "Główna"
+		expect(stops[0].stopName.toLowerCase()).toContain('gł');
+	}, 30000);
 });
