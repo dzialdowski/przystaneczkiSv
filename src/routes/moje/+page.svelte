@@ -14,7 +14,6 @@
 		Save,
 		Download,
 		Upload,
-		HardDrive,
 		RefreshCw,
 		X
 	} from 'lucide-svelte';
@@ -95,11 +94,7 @@
 			selectedForAdd = null;
 			searchAddQuery = '';
 			customName = '';
-			showToast(
-				favoritesManager.isLocal
-					? 'Dodano przystanek do ulubionych (zapis w IndexedDB)! ⭐'
-					: 'Dodano przystanek do ulubionych! ⭐'
-			);
+			showToast('Dodano przystanek do ulubionych! ⭐');
 		} else {
 			showToast('Nie udało się zapisać przystanku.');
 		}
@@ -147,7 +142,7 @@
 		isMerging = true;
 		try {
 			const res = await favoritesManager.mergeLocalDbToServer();
-			showToast(`Przeniesiono ${res.count} przystanków z pamięci lokalnej na Twoje konto! ⭐`);
+			showToast(`Przeniesiono ${res.count} przystanków na Twoje konto! ⭐`);
 		} finally {
 			isMerging = false;
 		}
@@ -204,7 +199,7 @@
 				<button
 					onclick={() => (showImportModal = true)}
 					class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 hover:text-white text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-					title="Zaimportuj ulubione przystanki z pliku JSON"
+					title="Zaimportuj ulubione przystanki z pliku"
 				>
 					<Upload class="w-3.5 h-3.5 text-cyan-400" />
 					<span>Importuj</span>
@@ -215,7 +210,7 @@
 					onclick={handleExport}
 					disabled={favoritesManager.items.length === 0}
 					class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 hover:text-white text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-					title="Pobierz ulubione przystanki jako plik JSON"
+					title="Pobierz ulubione przystanki jako plik"
 				>
 					<Download class="w-3.5 h-3.5 text-emerald-400" />
 					<span>Eksportuj</span>
@@ -247,25 +242,25 @@
 			</p>
 		</div>
 
-		<!-- Baner informacyjny: Tryb lokalny bez logowania (IndexedDB) -->
+		<!-- Baner informacyjny: Zapis lokalny bez logowania -->
 		{#if !user}
 			<div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
 				<div class="flex items-start gap-3">
 					<div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5 sm:mt-0">
-						<HardDrive class="w-5 h-5" />
+						<Star class="w-5 h-5" />
 					</div>
 					<div>
 						<h2 class="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
-							Tryb lokalny (IndexedDB) — brak konieczności logowania
+							Ulubione na tym urządzeniu (bez logowania)
 						</h2>
 						<p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
-							Twoje przystanki są bezpiecznie przechowywane w pamięci tej przeglądarki. Dane nie synchronizują się z chmurą, ale możesz je w każdej chwili wyeksportować do pliku JSON lub zalogować się przez Telegram.
+							Twoje przystanki są zapisywane na tym urządzeniu. Nie synchronizują się automatycznie z innymi telefonami czy komputerami, ale możesz je w każdej chwili wyeksportować do pliku lub zalogować się przez Telegram.
 						</p>
 					</div>
 				</div>
 			</div>
 		{:else if favoritesManager.localCount > 0}
-			<!-- Baner dla zalogowanego użytkownika, który posiada wcześniejsze przystanki w IndexedDB -->
+			<!-- Baner dla zalogowanego użytkownika, który posiada wcześniejsze przystanki zapisane lokalnie -->
 			<div class="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
 				<div class="flex items-start gap-3">
 					<div class="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0 mt-0.5 sm:mt-0">
@@ -273,10 +268,10 @@
 					</div>
 					<div>
 						<h2 class="text-xs sm:text-sm font-bold text-cyan-200">
-							Wykryto {favoritesManager.localCount} {favoritesManager.localCount === 1 ? 'przystanek' : 'przystanki/ów'} w pamięci lokalnej
+							Wykryto {favoritesManager.localCount} {favoritesManager.localCount === 1 ? 'przystanek' : 'przystanki/ów'} zapisanych na tym urządzeniu
 						</h2>
 						<p class="text-[11px] sm:text-xs text-slate-300 mt-0.5">
-							Przystanki zapisane w tej przeglądarce przed zalogowaniem możesz przenieść na swoje konto Telegram.
+							Przystanki dodane przed zalogowaniem możesz łatwo przenieść na swoje konto Telegram.
 						</p>
 					</div>
 				</div>
@@ -287,7 +282,7 @@
 						class="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
 					>
 						<Check class="w-3.5 h-3.5" />
-						<span>{isMerging ? 'Przenoszenie...' : 'Scal z kontem'}</span>
+						<span>{isMerging ? 'Przenoszenie...' : 'Przenieś na konto'}</span>
 					</button>
 					<button
 						onclick={() => favoritesManager.dismissLocalDb()}
@@ -307,11 +302,7 @@
 				</div>
 				<h2 class="text-base font-bold text-white">Brak ulubionych przystanków</h2>
 				<p class="text-xs text-slate-400 max-w-sm mx-auto">
-					{#if !user}
-						Nie masz jeszcze dodanych przystanków w pamięci podręcznej. Dodaj swój pierwszy przystanek lub wczytaj istniejące z pliku!
-					{:else}
-						Nie masz jeszcze dodanych przystanków na swoim koncie. Kliknij poniżej, aby dodać swój pierwszy przystanek!
-					{/if}
+					Nie masz jeszcze żadnych ulubionych przystanków. Dodaj swój pierwszy przystanek lub wczytaj listę z pliku!
 				</p>
 				<div class="flex flex-wrap items-center justify-center gap-2 pt-2">
 					<button
@@ -326,7 +317,7 @@
 						class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs inline-flex items-center gap-2 hover:bg-slate-700 hover:text-white transition cursor-pointer"
 					>
 						<Upload class="w-4 h-4 text-cyan-400" />
-						Importuj z pliku JSON
+						Importuj z pliku
 					</button>
 				</div>
 			</div>

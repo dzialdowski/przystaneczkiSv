@@ -47,9 +47,7 @@
 		const res = await favoritesManager.toggle(data.stopId, data.stopName);
 		if (res.success) {
 			if (res.isFavorite) {
-				toastMsg = favoritesManager.isLocal
-					? 'Dodano do ulubionych (zapis w IndexedDB)! ⭐'
-					: 'Dodano do ulubionych! ⭐';
+				toastMsg = 'Dodano do ulubionych! ⭐';
 			} else {
 				toastMsg = 'Usunięto z ulubionych';
 			}

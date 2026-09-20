@@ -6,6 +6,14 @@
 
 ---
 
+## Zasady interfejsu użytkownika (UI / UX) i komunikacji
+
+- **BEZWZGLĘDNY ZAKAZ TECHNICZNEGO ŻARGONU W INTERFEJSIE UŻYTKOWNIKA**:
+  - W komunikatach widocznych dla użytkownika (powiadomienia toast, banery informacyjne, etykiety, modale, przyciski, opisy, komunikaty błędów) **NIGDY** nie umieszczaj nazw wewnętrznych technologii, protokołów, bibliotek czy silników bazodanowych (np. zabronione są terminy: `IndexedDB`, `SQL`, `baza danych`, `cache przeglądarki`, `API`, `localStorage`, `SSR` itp.).
+  - Komunikaty i teksty w interfejsie muszą być proste, naturalne, zwięzłe i zrozumiałe dla każdego zwykłego pasażera (np. „Dodano do ulubionych! ⭐”, „Ulubione na tym urządzeniu”, „Zapisano na Twoim koncie”, „Wczytaj listę z pliku”).
+
+---
+
 You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
 
 ## Available Svelte MCP Tools:

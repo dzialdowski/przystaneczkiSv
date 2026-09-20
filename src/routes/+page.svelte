@@ -64,7 +64,7 @@
 		}
 	};
 
-	// Czy ten przystanek jest w ulubionych usera (lub w magazynie lokalnym IndexedDB)
+	// Czy ten przystanek jest w ulubionych
 	let isFavorite = $derived(favoritesManager.isFavorite(selectedStopId));
 
 	async function loadDelays(stopId: string) {
@@ -109,11 +109,7 @@
 		const res = await favoritesManager.toggle(selectedStopId, currentStopName);
 		if (res.success) {
 			if (res.isFavorite) {
-				showToast(
-					favoritesManager.isLocal
-						? 'Dodano do ulubionych (zapis w IndexedDB)! ⭐'
-						: 'Dodano przystanek do ulubionych! ⭐'
-				);
+				showToast('Dodano przystanek do ulubionych! ⭐');
 			} else {
 				showToast('Usunięto z ulubionych');
 			}
@@ -146,7 +142,6 @@
 	}
 
 	onMount(async () => {
-		// Inicjalizuj ulubione (lokalne z IndexedDB lub z serwera)
 		await favoritesManager.init(data.user, data.favorites);
 
 		// Jeśli są ulubione i stan NIE został odtworzony ze snapshotu, ustaw pierwszy jako domyślny

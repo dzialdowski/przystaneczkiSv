@@ -43,7 +43,7 @@
 				valid: false,
 				favorites: [],
 				totalFound: 0,
-				error: 'Błąd podczas odczytu pliku z dysku.'
+				error: 'Błąd podczas odczytu pliku.'
 			};
 		};
 
@@ -104,7 +104,7 @@
 					<div>
 						<h3 class="font-bold text-white text-base">Import ulubionych przystanków</h3>
 						<p class="text-[11px] text-slate-400">
-							{isLocalMode ? 'Import do pamięci przeglądarki (IndexedDB)' : 'Import do Twojego konta'}
+							{isLocalMode ? 'Zapis na tym urządzeniu' : 'Zapis na Twoim koncie'}
 						</p>
 					</div>
 				</div>
@@ -141,10 +141,10 @@
 					</div>
 					<div>
 						<p class="text-sm font-bold text-white">
-							Przeciągnij i upuść plik JSON lub <span class="text-amber-400 underline decoration-amber-400/40">przeglądaj</span>
+							Przeciągnij i upuść plik lub <span class="text-amber-400 underline decoration-amber-400/40">wybierz z dysku</span>
 						</p>
 						<p class="text-xs text-slate-400 mt-1">
-							Obsługiwany format: pliki eksportu Przystaneczki (.json)
+							Obsługiwany format: pliki z listą przystanków (.json)
 						</p>
 					</div>
 				</div>
@@ -155,8 +155,8 @@
 				<div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-300">
 					<AlertCircle class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
 					<div class="flex-1">
-						<p class="font-bold text-rose-200">Nie udało się wczytać pliku</p>
-						<p class="text-[11px] mt-0.5">{parseResult.error || 'Nieznany błąd formatu'}</p>
+						<p class="font-bold text-rose-200">Nie udało się odczytać pliku</p>
+						<p class="text-[11px] mt-0.5">{parseResult.error || 'Nieprawidłowy format pliku.'}</p>
 					</div>
 					<button
 						onclick={() => fileInput?.click()}
