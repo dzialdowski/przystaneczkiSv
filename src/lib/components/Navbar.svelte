@@ -123,6 +123,15 @@
 				</button>
 			{/if}
 
+			<!-- Szybki link do ulubionych na smartfonach -->
+			<a
+				href="/moje"
+				title="Moje ulubione przystanki"
+				class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex md:hidden items-center justify-center text-slate-300 hover:text-amber-400 hover:border-slate-700 active:scale-95 transition"
+			>
+				<Star class="w-4 h-4 text-amber-400" />
+			</a>
+
 			{#if onRefresh}
 				<button
 					onclick={onRefresh}
@@ -149,7 +158,7 @@
 				<div class="relative">
 					<button
 						onclick={() => showUserModal = !showUserModal}
-						class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 transition"
+						class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 transition cursor-pointer"
 					>
 						<div class="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center text-xs font-bold uppercase">
 							{user.first_name ? user.first_name[0] : 'U'}
@@ -176,7 +185,7 @@
 											showUserModal = false;
 											pwa.install();
 										}}
-										class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-amber-400 font-semibold transition text-left"
+										class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-amber-400 font-semibold transition text-left cursor-pointer"
 									>
 										<Download class="w-3.5 h-3.5" />
 										Zainstaluj aplikację
@@ -213,14 +222,14 @@
 							<div class="pt-2 border-t border-slate-800 flex justify-between items-center">
 								<button
 									onclick={handleLogout}
-									class="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold transition"
+									class="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold transition cursor-pointer"
 								>
 									<LogOut class="w-3.5 h-3.5" />
 									Wyloguj się
 								</button>
 								<button
 									onclick={() => showUserModal = false}
-									class="text-slate-400 hover:text-slate-300 text-[11px]"
+									class="text-slate-400 hover:text-slate-300 text-[11px] cursor-pointer"
 								>
 									Zamknij
 								</button>
@@ -231,7 +240,7 @@
 			{:else}
 				<button
 					onclick={() => showUserModal = !showUserModal}
-					class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 active:scale-95 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5"
+					class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:brightness-110 active:scale-95 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer"
 				>
 					Zaloguj się
 				</button>
@@ -240,7 +249,7 @@
 					<div class="absolute right-4 top-16 w-84 p-4 rounded-3xl bg-slate-900/95 backdrop-blur-xl border border-slate-800 shadow-2xl z-50 text-xs text-slate-300 space-y-3">
 						<div class="flex items-center justify-between pb-1 border-b border-slate-800">
 							<h3 class="font-bold text-white text-sm">Logowanie przez Telegram</h3>
-							<button onclick={() => showUserModal = false} class="text-slate-400 hover:text-white">✕</button>
+							<button onclick={() => showUserModal = false} class="text-slate-400 hover:text-white cursor-pointer">✕</button>
 						</div>
 
 						<!-- Oficjalny Telegram Login Widget -->
@@ -256,7 +265,7 @@
 									<button
 										disabled={loggingInDev}
 										onclick={() => handleDevLogin('999999999', 'Admin Rafał')}
-										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition"
+										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition cursor-pointer"
 									>
 										<span class="block font-bold text-white text-xs">Admin Rafał</span>
 										<span class="block text-[10px] text-amber-400 font-mono-board">Rola: Admin</span>
@@ -264,7 +273,7 @@
 									<button
 										disabled={loggingInDev}
 										onclick={() => handleDevLogin('111111111', 'Jan Kowalski')}
-										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition"
+										class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-left transition cursor-pointer"
 									>
 										<span class="block font-bold text-white text-xs">Jan Kowalski</span>
 										<span class="block text-[10px] text-slate-400 font-mono-board">Rola: User</span>

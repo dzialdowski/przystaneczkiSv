@@ -4,12 +4,12 @@
 	import { Star, ArrowLeft, RefreshCw, Bus, Share2 } from 'lucide-svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import DepartureBoard from '$lib/components/DepartureBoard.svelte';
+	import { favoritesManager } from '$lib/favorites.svelte';
 	import type { DelaysResponse } from '$lib/server/tristar';
 	import type { FavoriteStop } from '$lib/server/db';
 
 	let { data } = $props();
 	let user = $derived(data.user);
-	let favorites = $state<FavoriteStop[]>([]);
 	let legacyMode = $state(false);
 	let isAdmin = $derived(data.isAdmin || false);
 
@@ -20,7 +20,6 @@
 	});
 
 	$effect(() => {
-		favorites = data.favorites || [];
 		legacyMode = data.legacyMode || false;
 		if (data.initialDelays) {
 			delaysData = data.initialDelays;
@@ -30,7 +29,7 @@
 	let autoRefresh: any;
 	let toastMsg = $state<string | null>(null);
 
-	let isFav = $derived(favorites.some((f) => String(f.stop_id).trim() === String(data.stopId).trim()));
+	let isFav = $derived(favoritesManager.isFavorite(data.stopId));
 
 	async function refresh() {
 		loading = true;
@@ -45,31 +44,22 @@
 	}
 
 	async function toggleFav() {
-		if (!user) {
-			toastMsg = 'Zaloguj się, aby dodać przystanek do ulubionych!';
-			return;
-		}
-
-		if (isFav) {
-			const res = await fetch(`/api/favorites?stopId=${data.stopId}`, { method: 'DELETE' });
-			if (res.ok) {
-				favorites = favorites.filter((f) => String(f.stop_id).trim() !== String(data.stopId).trim());
+		const res = await favoritesManager.toggle(data.stopId, data.stopName);
+		if (res.success) {
+			if (res.isFavorite) {
+				toastMsg = favoritesManager.isLocal
+					? 'Dodano do ulubionych (zapis w IndexedDB)! ⭐'
+					: 'Dodano do ulubionych! ⭐';
+			} else {
 				toastMsg = 'Usunięto z ulubionych';
 			}
 		} else {
-			const res = await fetch('/api/favorites', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ stopId: data.stopId, stopName: data.stopName })
-			});
-			if (res.ok) {
-				favorites = [...favorites, { user_id: String(user.id), stop_id: data.stopId, stop_name: data.stopName }];
-				toastMsg = 'Dodano do ulubionych! ⭐';
-			}
+			toastMsg = 'Nie udało się zapisać przystanku.';
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		await favoritesManager.init(data.user, data.favorites);
 		autoRefresh = setInterval(refresh, 20000);
 	});
 
@@ -107,7 +97,7 @@
 			<div class="flex items-center gap-2">
 				<button
 					onclick={toggleFav}
-					class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition {isFav ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}"
+					class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer {isFav ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}"
 				>
 					<Star class="w-3.5 h-3.5 {isFav ? 'fill-slate-950' : ''}" />
 					<span>{isFav ? 'Ulubiony' : 'Dodaj do ulubionych'}</span>

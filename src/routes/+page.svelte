@@ -8,6 +8,7 @@
 	import StopSelector from '$lib/components/StopSelector.svelte';
 	import NearestStops from '$lib/components/NearestStops.svelte';
 	import MessageTicker from '$lib/components/MessageTicker.svelte';
+	import { favoritesManager } from '$lib/favorites.svelte';
 	import type { DelaysResponse } from '$lib/server/tristar';
 	import type { FavoriteStop } from '$lib/server/db';
 	import { DEMO_STOPS } from '$lib/demoStops';
@@ -21,12 +22,10 @@
 	// Dane z layoutu
 	let { data } = $props();
 	let user = $derived(data.user);
-	let favorites = $state<FavoriteStop[]>([]);
 	let legacyMode = $state(false);
 	let isAdmin = $derived(data.isAdmin || false);
 
 	$effect(() => {
-		favorites = data.favorites || [];
 		legacyMode = data.legacyMode || false;
 	});
 
@@ -65,8 +64,8 @@
 		}
 	};
 
-	// Czy ten przystanek jest w ulubionych usera
-	let isFavorite = $derived(favorites.some((f) => String(f.stop_id).trim() === String(selectedStopId).trim()));
+	// Czy ten przystanek jest w ulubionych usera (lub w magazynie lokalnym IndexedDB)
+	let isFavorite = $derived(favoritesManager.isFavorite(selectedStopId));
 
 	async function loadDelays(stopId: string) {
 		loadingDelays = true;
@@ -107,27 +106,19 @@
 	}
 
 	async function toggleFavorite() {
-		if (!user) {
-			showToast('Zaloguj się, aby dodawać przystanki do ulubionych');
-			return;
-		}
-
-		if (isFavorite) {
-			const res = await fetch(`/api/favorites?stopId=${selectedStopId}`, { method: 'DELETE' });
-			if (res.ok) {
-				favorites = favorites.filter((f) => String(f.stop_id).trim() !== String(selectedStopId).trim());
+		const res = await favoritesManager.toggle(selectedStopId, currentStopName);
+		if (res.success) {
+			if (res.isFavorite) {
+				showToast(
+					favoritesManager.isLocal
+						? 'Dodano do ulubionych (zapis w IndexedDB)! ⭐'
+						: 'Dodano przystanek do ulubionych! ⭐'
+				);
+			} else {
 				showToast('Usunięto z ulubionych');
 			}
 		} else {
-			const res = await fetch('/api/favorites', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ stopId: selectedStopId, stopName: currentStopName })
-			});
-			if (res.ok) {
-				favorites = [...favorites, { user_id: String(user.id), stop_id: selectedStopId, stop_name: currentStopName }];
-				showToast('Dodano przystanek do ulubionych! ⭐');
-			}
+			showToast('Nie udało się zapisać przystanku w ulubionych.');
 		}
 	}
 
@@ -154,11 +145,14 @@
 		}, 3500);
 	}
 
-	onMount(() => {
-		// Jeśli user ma ulubione i stan NIE został odtworzony ze snapshotu, ustaw pierwszy jako domyślny
-		if (!restoredFromSnapshot && favorites && favorites.length > 0) {
-			selectedStopId = String(favorites[0].stop_id);
-			currentStopName = favorites[0].stop_name;
+	onMount(async () => {
+		// Inicjalizuj ulubione (lokalne z IndexedDB lub z serwera)
+		await favoritesManager.init(data.user, data.favorites);
+
+		// Jeśli są ulubione i stan NIE został odtworzony ze snapshotu, ustaw pierwszy jako domyślny
+		if (!restoredFromSnapshot && favoritesManager.items && favoritesManager.items.length > 0) {
+			selectedStopId = String(favoritesManager.items[0].stop_id);
+			currentStopName = favoritesManager.items[0].stop_name;
 		}
 
 		// Pobierz świeże dane z API (jeśli ze snapshotu, lista już jest wyrenderowana, a w tle pobierze najświeższe dane)
@@ -241,7 +235,7 @@
 			<!-- Komponent selektora i wyszukiwarki -->
 			<StopSelector
 				{selectedStopId}
-				{favorites}
+				favorites={favoritesManager.items}
 				onSelect={handleSelectStop}
 				onOpenGps={handleOpenGps}
 			/>
