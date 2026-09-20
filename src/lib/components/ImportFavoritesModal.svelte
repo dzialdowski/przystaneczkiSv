@@ -197,7 +197,6 @@
 									<Star class="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
 									<span class="font-semibold text-white truncate">{stop.stop_name}</span>
 								</div>
-								<span class="text-[10px] text-slate-500 font-mono-board shrink-0 ml-2">ID: {stop.stop_id}</span>
 							</div>
 						{/each}
 					</div>

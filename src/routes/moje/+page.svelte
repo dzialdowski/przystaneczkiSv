@@ -359,10 +359,7 @@
 										</button>
 									</div>
 								{:else}
-									<div class="flex items-center gap-2">
-										<h2 class="font-bold text-white text-base truncate">{fav.stop_name}</h2>
-										<span class="text-[10px] text-slate-500 font-mono-board">ID: {fav.stop_id}</span>
-									</div>
+									<h2 class="font-bold text-white text-base truncate">{fav.stop_name}</h2>
 								{/if}
 							</div>
 						</div>
@@ -464,7 +461,7 @@
 							bind:value={customName}
 							class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
 						/>
-						<p class="text-[11px] text-slate-400">Wybrany przystanek: <strong>{selectedForAdd.stopName}</strong> (ID: {selectedForAdd.stopId})</p>
+						<p class="text-[11px] text-slate-400">Wybrany przystanek: <strong>{selectedForAdd.stopName}</strong></p>
 					</div>
 
 					<div class="flex items-center justify-end gap-2 pt-2">
