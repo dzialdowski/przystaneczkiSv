@@ -47,6 +47,11 @@
 		return qs ? `${base}?${qs}` : base;
 	}
 
+	// Helper do budowania linku do rozkładu jazdy danej linii na stronie ZKM Gdynia
+	function getZkmLineUrl(line: string): string {
+		return `https://zkmgdynia.pl/linie/${encodeURIComponent(line.trim())}`;
+	}
+
 	// Dynamiczne odliczanie w czasie rzeczywistym
 	let currentTime = $state(Date.now());
 	let intervalId: any;
@@ -294,9 +299,11 @@
 						<tr class="border-b border-neutral-800 hover:bg-neutral-900/50">
 							<td class="p-2 font-bold text-amber-400">
 								<a
-									href="https://zkmgdynia.pl/rozklad-jazdy"
+									href={getZkmLineUrl(row.line)}
 									target="_blank"
+									rel="noopener noreferrer"
 									class="hover:underline"
+									title="Otwórz oficjalny rozkład jazdy ZKM Gdynia dla linii {row.line}"
 								>
 									{row.line}
 								</a>
@@ -460,8 +467,9 @@
 						<div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
 							<!-- Pigułka numeru linii -->
 							<a
-								href="https://zkmgdynia.pl/rozklad-jazdy"
+								href={getZkmLineUrl(row.line)}
 								target="_blank"
+								rel="noopener noreferrer"
 								class="w-12 h-11 sm:w-14 sm:h-12 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-base sm:text-lg shrink-0 shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition"
 								title="Otwórz oficjalny rozkład jazdy ZKM Gdynia dla linii {row.line}"
 							>
